@@ -159,6 +159,8 @@ impl Game<'_> {
                 && self.creative_screen.tab().search
                 && self.search_tab_hotbar_key(key) => {}
             KeyCode::KeyT if self.screen == Screen::Inventory => self.recipe_focus_search(),
+            // Horizon's code inspector: the Rust behind the entity in the crosshair.
+            KeyCode::KeyI if self.screen == Screen::Playing => self.inspect_crosshair_entity(),
             KeyCode::KeyT if self.screen == Screen::Playing => self.open_chat_method(""),
             // CreativeModeInventoryScreen.keyPressed: the chat key opens the
             // search tab from another tab, and `ignoreTextInput` drops the

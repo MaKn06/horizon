@@ -487,7 +487,7 @@ impl Game<'_> {
 
     /// `Minecraft.crosshairPickEntity`'s type: the nearest entity under the
     /// crosshair before any block.
-    fn crosshair_entity_type(&self) -> Option<String> {
+    pub(super) fn crosshair_entity_type(&self) -> Option<String> {
         let mut best: Option<(f64, String)> = None;
         let mut offer = |hit: Option<(f64, String)>| {
             if let Some((distance, kind)) = hit
