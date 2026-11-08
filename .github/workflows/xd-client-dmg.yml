@@ -1,5 +1,5 @@
-# Builds xD Client (xd-client/: the glass launcher) for macOS on GitHub's Mac runners: Apple Silicon and
-# Intel. Each .app carries Horizon's official launcher (its newest signed release), which xD Client
+# Builds xD Client (xd-client/: the glass launcher) for macOS on GitHub's Mac runners, for Apple Silicon.
+# Each .app carries Horizon's official launcher (its newest signed release), which xD Client
 # drives for installs, Microsoft sign-in, packs and playing. xD Client is signed ad hoc; the .dmg
 # files are this run's artifacts (Actions tab → the run → Artifacts). Publishes no release.
 name: xD Client DMG
@@ -26,8 +26,6 @@ jobs:
         include:
           - arch: arm64
             target: aarch64-apple-darwin
-          - arch: x64
-            target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v7
         with:
