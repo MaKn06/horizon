@@ -1,15 +1,15 @@
 [package]
-name = "aurora-launcher"
+name = "xd-client"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Aurora: a launcher for Horizon with a glass look, animated backgrounds and its own cursor"
+description = "xD Client: a launcher for Horizon with a glass look, animated backgrounds and its own cursor"
 
 # Its own workspace, like launcher/: it builds apart from the game.
 [workspace]
 
 [[bin]]
-name = "aurora"
+name = "xd-client"
 path = "src/main.rs"
 
 [dependencies]

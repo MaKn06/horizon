@@ -1,23 +1,23 @@
-# Builds Aurora (aurora/: the glass launcher) for macOS on GitHub's Mac runners: Apple Silicon and
-# Intel. Each .app carries Horizon's official launcher (its newest signed release), which Aurora
-# drives for installs, Microsoft sign-in, packs and playing. Aurora is signed ad hoc; the .dmg
+# Builds xD Client (xd-client/: the glass launcher) for macOS on GitHub's Mac runners: Apple Silicon and
+# Intel. Each .app carries Horizon's official launcher (its newest signed release), which xD Client
+# drives for installs, Microsoft sign-in, packs and playing. xD Client is signed ad hoc; the .dmg
 # files are this run's artifacts (Actions tab → the run → Artifacts). Publishes no release.
-name: Aurora DMG
+name: xD Client DMG
 
 on:
   workflow_dispatch:
   push:
     branches: ['claude/**']
     paths:
-      - '.github/workflows/aurora-dmg.yml'
-      - 'aurora/**'
+      - '.github/workflows/xd-client-dmg.yml'
+      - 'xd-client/**'
 
 permissions:
   contents: read
 
 jobs:
   dmg:
-    name: aurora ${{ matrix.arch }}
+    name: xd-client ${{ matrix.arch }}
     runs-on: macos-latest
     timeout-minutes: 90
     strategy:
@@ -37,8 +37,8 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: aurora
-          shared-key: aurora-${{ matrix.arch }}
+          workspaces: xd-client
+          shared-key: xd-client-${{ matrix.arch }}
       - name: The official Horizon launcher
         # Horizon's own signed release (horizon-rust/horizon, launcher@X.Y.Z): its Microsoft
         # sign-in is Horizon's registered app, which a fork's build doesn't have. The newest
@@ -62,18 +62,18 @@ jobs:
           bin="$RUNNER_TEMP/horizon/Horizon.app/Contents/MacOS/horizon-launcher"
           codesign --verify --verbose=2 "$bin"
           echo "HORIZON_LAUNCHER_BIN=$bin" >> "$GITHUB_ENV"
-      - name: Build Aurora
-        working-directory: aurora
+      - name: Build xD Client
+        working-directory: xd-client
         run: cargo build --release --locked --target ${{ matrix.target }}
-      - name: Package Aurora.app and the .dmg
+      - name: Package xD Client.app and the .dmg
         run: |
-          version=$(sed -n 's/^version = "\(.*\)"/\1/p' aurora/Cargo.toml | head -1)
-          bash aurora/packaging/package.sh \
-            aurora/target/${{ matrix.target }}/release/aurora \
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' xd-client/Cargo.toml | head -1)
+          bash xd-client/packaging/package.sh \
+            xd-client/target/${{ matrix.target }}/release/xd-client \
             "$HORIZON_LAUNCHER_BIN" \
             "$version" out ${{ matrix.arch }}
       - uses: actions/upload-artifact@v7
         with:
-          name: Aurora-macos-${{ matrix.arch }}
+          name: xD-Client-macos-${{ matrix.arch }}
           path: out/*.dmg
           retention-days: 30

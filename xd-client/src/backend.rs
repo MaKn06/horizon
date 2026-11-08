@@ -1,10 +1,10 @@
 //! What the page can ask for. Each call arrives as `{"id", "cmd", "args"}`, runs on its own
-//! thread and is answered with `window.__aurora.resolve(id, value, error)`; long steps (an
-//! install, the game) also send their lines as `window.__aurora.emit("log", …)`.
+//! thread and is answered with `window.__xd.resolve(id, value, error)`; long steps (an
+//! install, the game) also send their lines as `window.__xd.emit("log", …)`.
 //!
 //! Instances, accounts, packs, Java and installs are the Horizon launcher's
 //! (`horizon-launcher --json …`, shipped next to this program), so both launchers share the same
-//! data. Aurora keeps only its own look and launch preferences (`settings.json`).
+//! data. xD Client keeps only its own look and launch preferences (`settings.json`).
 
 use crate::UserEvent;
 use base64::Engine;
@@ -33,8 +33,8 @@ pub fn handle(body: String, proxy: Proxy) {
     std::thread::spawn(move || {
         let result = dispatch(&cmd, &args, &proxy);
         let js = match result {
-            Ok(v) => format!("window.__aurora.resolve({id},{},null)", js_value(&v)),
-            Err(e) => format!("window.__aurora.resolve({id},null,{})", js_value(&json!(e))),
+            Ok(v) => format!("window.__xd.resolve({id},{},null)", js_value(&v)),
+            Err(e) => format!("window.__xd.resolve({id},null,{})", js_value(&json!(e))),
         };
         let _ = proxy.send_event(UserEvent::Eval(js));
     });
@@ -49,7 +49,7 @@ fn js_value(v: &Value) -> String {
 
 fn emit(proxy: &Proxy, name: &str, data: Value) {
     let js = format!(
-        "window.__aurora.emit({},{})",
+        "window.__xd.emit({},{})",
         js_value(&json!(name)),
         js_value(&data)
     );
@@ -176,10 +176,10 @@ fn dispatch(cmd: &str, args: &Value, proxy: &Proxy) -> Result<Value, String> {
 
 // --- the Horizon launcher's command line ---------------------------------------------------
 
-/// `horizon-launcher` next to this program (inside the .app), else `AURORA_HORIZON_LAUNCHER`,
+/// `horizon-launcher` next to this program (inside the .app), else `XD_HORIZON_LAUNCHER`,
 /// else the one on PATH.
 fn launcher_path() -> PathBuf {
-    if let Ok(p) = std::env::var("AURORA_HORIZON_LAUNCHER") {
+    if let Ok(p) = std::env::var("XD_HORIZON_LAUNCHER") {
         return PathBuf::from(p);
     }
     let name = if cfg!(windows) {
@@ -197,7 +197,7 @@ fn launcher_path() -> PathBuf {
 fn launcher(args: &[&str]) -> Command {
     let mut cmd = Command::new(launcher_path());
     cmd.args(args)
-        // The bundled copy is updated with Aurora, never by itself.
+        // The bundled copy is updated with xD Client, never by itself.
         .env("HORIZON_LAUNCHER_NO_SELF_UPDATE", "1")
         .stdin(Stdio::null());
     cmd
@@ -322,7 +322,7 @@ fn launch_inner(args: &Value, proxy: &Proxy) -> Result<Value, String> {
     let fullscreen = cfg["fullscreen"] == true;
 
     if java {
-        // The launcher's own settings for a Java instance, from Aurora's: memory, -Xms and the
+        // The launcher's own settings for a Java instance, from xD Client's: memory, -Xms and the
         // JVM arguments, the Java to run on, the window size.
         let xmx = (cfg["xmx"].as_f64().unwrap_or(4.0) * 1024.0) as u64;
         let xms = (cfg["xms"].as_f64().unwrap_or(2.0) * 1024.0) as u64;
@@ -371,11 +371,11 @@ fn launch_inner(args: &Value, proxy: &Proxy) -> Result<Value, String> {
     emit(
         proxy,
         "log",
-        json!({ "line": format!("[Aurora] horizon-launcher {}", play.join(" ")), "stream": "info", "tag": "game" }),
+        json!({ "line": format!("[xD Client] horizon-launcher {}", play.join(" ")), "stream": "info", "tag": "game" }),
     );
 
     if on_launch == "close" {
-        // Nothing reads its output once Aurora has gone, so it gets none to write to.
+        // Nothing reads its output once xD Client has gone, so it gets none to write to.
         launcher(&play)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -625,7 +625,7 @@ fn set_skin(args: &Value) -> Result<Value, String> {
             continue;
         };
         let png = data_url_bytes(url)?;
-        let path = std::env::temp_dir().join(format!("aurora-{key}-{}.png", std::process::id()));
+        let path = std::env::temp_dir().join(format!("xd-client-{key}-{}.png", std::process::id()));
         std::fs::write(&path, png).map_err(|e| e.to_string())?;
         if let Some(flag) = flag {
             a.push(flag.into());
@@ -710,7 +710,7 @@ fn pick_image() -> Result<Value, String> {
     }))
 }
 
-// --- Aurora's own settings and the system ----------------------------------------------------
+// --- xD Client's own settings and the system ----------------------------------------------------
 
 fn settings_path() -> PathBuf {
     let base = if cfg!(target_os = "macos") {
@@ -725,9 +725,9 @@ fn settings_path() -> PathBuf {
             .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))
             .unwrap_or_default()
     };
-    let dir = std::env::var_os("AURORA_HOME")
+    let dir = std::env::var_os("XD_CLIENT_HOME")
         .map(PathBuf::from)
-        .unwrap_or_else(|| base.join("Aurora"));
+        .unwrap_or_else(|| base.join("xD Client"));
     dir.join("settings.json")
 }
 

@@ -1,7 +1,7 @@
-"""Draws Aurora's app icon (icon.png, 1024 px): a rounded square with a night gradient, a soft
-accent glow and a white "A". Run once; the PNG is checked in and package.sh turns it into .icns.
+"""Draws xD Client's app icon (icon.png, 1024 px): a rounded square with a night gradient, a soft
+accent glow and a white "xD". Run once; the PNG is checked in and package.sh turns it into .icns.
 
-    python3 aurora/packaging/make_icon.py
+    python3 xd-client/packaging/make_icon.py
 """
 from pathlib import Path
 
@@ -34,14 +34,14 @@ def main():
     font = None
     for name in ("DejaVuSans-Bold.ttf", "Arial Bold.ttf", "Helvetica.ttc"):
         try:
-            font = ImageFont.truetype(name, 600)
+            font = ImageFont.truetype(name, 430)
             break
         except OSError:
             pass
     font = font or ImageFont.load_default()
-    box = d.textbbox((0, 0), "A", font=font)
+    box = d.textbbox((0, 0), "xD", font=font)
     w, h = box[2] - box[0], box[3] - box[1]
-    d.text(((S - w) / 2 - box[0], (S - h) / 2 - box[1] + 10), "A", font=font, fill=(240, 244, 255, 255))
+    d.text(((S - w) / 2 - box[0], (S - h) / 2 - box[1] + 10), "xD", font=font, fill=(240, 244, 255, 255))
     # macOS icon grid: the art sits in an 824 px rounded square with a 100 px margin.
     mask = Image.new("L", (S, S), 0)
     ImageDraw.Draw(mask).rounded_rectangle((100, 100, 924, 924), radius=185, fill=255)

@@ -32,18 +32,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aurora-launcher"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "rfd",
- "serde_json",
- "tao",
- "ureq",
- "wry",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3072,6 +3060,18 @@ dependencies = [
  "libc",
  "once_cell",
  "pkg-config",
+]
+
+[[package]]
+name = "xd-client"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "rfd",
+ "serde_json",
+ "tao",
+ "ureq",
+ "wry",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-//! Aurora: one window with a web view that shows the launcher's pages (`ui/index.html`). The
+//! xD Client: one window with a web view that shows the launcher's pages (`ui/index.html`). The
 //! page asks for everything through `window.ipc` (`backend.rs`); installing, signing in and
 //! playing go through the Horizon launcher's command line, shipped next to this program.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -28,7 +28,7 @@ fn main() {
 
     #[allow(unused_mut)]
     let mut builder = WindowBuilder::new()
-        .with_title("Aurora")
+        .with_title("xD Client")
         .with_inner_size(LogicalSize::new(1220.0, 800.0))
         .with_min_inner_size(LogicalSize::new(940.0, 640.0));
     #[cfg(target_os = "macos")]
@@ -47,7 +47,7 @@ fn main() {
         .with_background_color((7, 8, 12, 255))
         .with_devtools(cfg!(debug_assertions))
         .with_initialization_script(&format!(
-            "window.__auroraPlatform = {:?};",
+            "window.__xdPlatform = {:?};",
             std::env::consts::OS
         ))
         .with_ipc_handler(move |req: wry::http::Request<String>| {
