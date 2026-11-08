@@ -23,8 +23,30 @@ macro_rules! source {
     };
 }
 
-/// Every mob's species table, shown after the mob's own files.
-static SPECIES: SourceFile = source!("mobs/species.rs");
+/// How much of a file the page shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Scope {
+    /// All of it: the file is the entity's own.
+    Whole,
+    /// The places that name the entity, with their surroundings; the rest
+    /// behind a button. A file that names it nowhere is left out, unless no
+    /// file does, and then the page shows them whole.
+    Hits,
+}
+
+/// What every mob runs through, shown after the mob's own files: the places
+/// that name the species (its table entry, behaviour, animation, drops,
+/// breeding and spawning).
+static CORE: &[SourceFile] = &[
+    source!("mobs/species.rs"),
+    source!("mobs/ai.rs"),
+    source!("mobs/animal_brain.rs"),
+    source!("mobs/anim.rs"),
+    source!("mobs/drops.rs"),
+    source!("mobs/farm.rs"),
+    source!("mobs/spawning.rs"),
+    source!("mobs/spawn_rules.rs"),
+];
 static BOATS: SourceFile = source!("game/boats.rs");
 static MINECARTS: SourceFile = source!("game/minecarts.rs");
 static ARMOR_STANDS: SourceFile = source!("game/armor_stands.rs");
@@ -102,30 +124,30 @@ static FAMILIES: &[(&[&str], &[SourceFile])] = &[
 ];
 
 /// The files that run the entity type `entity` (`minecraft:bat`, `oak_boat`),
-/// the most specific first. A mob without code of its own gets the species
-/// table alone; one with some gets the table after its files.
-pub(super) fn files_for(entity: &str) -> Vec<&'static SourceFile> {
+/// the most specific first. A mob's own files (if it has any) come whole;
+/// after them the places in the shared mob code that name it.
+pub(super) fn files_for(entity: &str) -> Vec<(&'static SourceFile, Scope)> {
     let id = entity.strip_prefix("minecraft:").unwrap_or(entity);
     if id.ends_with("boat") || id.ends_with("raft") {
-        return vec![&BOATS];
+        return vec![(&BOATS, Scope::Hits)];
     }
     if id.contains("minecart") {
-        return vec![&MINECARTS];
+        return vec![(&MINECARTS, Scope::Hits)];
     }
     match id {
-        "armor_stand" => return vec![&ARMOR_STANDS],
-        "painting" => return vec![&PAINTINGS],
-        "item_frame" | "glow_item_frame" => return vec![&FRAMES],
-        "end_crystal" => return vec![&END_CRYSTAL],
+        "armor_stand" => return vec![(&ARMOR_STANDS, Scope::Hits)],
+        "painting" => return vec![(&PAINTINGS, Scope::Hits)],
+        "item_frame" | "glow_item_frame" => return vec![(&FRAMES, Scope::Hits)],
+        "end_crystal" => return vec![(&END_CRYSTAL, Scope::Hits)],
         _ => {}
     }
-    let mut files: Vec<&'static SourceFile> = FAMILIES
+    let own = FAMILIES
         .iter()
         .filter(|(ids, _)| ids.contains(&id))
         .flat_map(|(_, files)| files.iter())
-        .collect();
-    files.push(&SPECIES);
-    files
+        .map(|file| (file, Scope::Whole));
+    let core = CORE.iter().map(|file| (file, Scope::Hits));
+    own.chain(core).collect()
 }
 
 /// `iron_golem` as the enum variant `IronGolem`.
@@ -209,11 +231,31 @@ fn highlight(line: &str, out: &mut String) {
     }
 }
 
+/// Lines of a file shown before and after each line that names the entity.
+const BEFORE: usize = 3;
+const AFTER: usize = 14;
+
 /// The page for `entity`: each file with numbered lines, the lines that name
-/// the entity marked, and the first of them scrolled into view.
-pub(super) fn render_html(entity: &str, files: &[&SourceFile]) -> String {
+/// the entity marked and the first of them scrolled into view. A file of
+/// [`Scope::Hits`] shows only those lines and their surroundings; the button
+/// shows the rest.
+pub(super) fn render_html(entity: &str, files: &[(&SourceFile, Scope)]) -> String {
     let id = entity.strip_prefix("minecraft:").unwrap_or(entity);
     let variant = camel(id);
+    // Per file: its lines and which of them name the entity. The variant
+    // (`Species::IronGolem`) first; the plain id only when the file never
+    // spells the variant.
+    let prepared: Vec<(&SourceFile, Scope, Vec<&str>, Vec<bool>)> = files
+        .iter()
+        .map(|&(file, scope)| {
+            let lines: Vec<&str> = file.text.lines().collect();
+            let by_variant = lines.iter().any(|l| contains_word(l, &variant));
+            let needle = if by_variant { variant.as_str() } else { id };
+            let hit = lines.iter().map(|l| contains_word(l, needle)).collect();
+            (file, scope, lines, hit)
+        })
+        .collect();
+    let any_hits = prepared.iter().any(|f| f.3.iter().any(|&h| h));
     let mut out = String::from("<!doctype html><meta charset=\"utf-8\"><title>");
     escape(id, &mut out);
     out.push_str(
@@ -225,27 +267,50 @@ pub(super) fn render_html(entity: &str, files: &[&SourceFile]) -> String {
          .l::before{content:attr(data-n);display:inline-block;width:5ch;margin-right:2ch;\
          text-align:right;color:#6b7680}\
          .hit{background:#3b3a1e}\
+         .x{display:none}body.all .x{display:block}\
+         .gap{display:block;color:#6b7680;margin:6px 0}body.all .gap{display:none}\
+         button{position:fixed;top:12px;right:16px;background:#2b3238;color:#d8dee4;\
+         border:1px solid #4a545d;border-radius:4px;padding:2px 10px;cursor:pointer}\
          b{color:#f0795a;font-weight:normal}i{color:#7d8a96;font-style:normal}\
-         </style><h1>",
+         </style><button onclick=\"document.body.classList.toggle('all')\">&hellip;</button><h1>",
     );
     escape(id, &mut out);
     out.push_str("</h1>");
     let mut anchored = false;
-    for file in files {
-        // The variant (`Species::IronGolem`) first; the plain id only when the
-        // file never spells the variant.
-        let by_variant = file.text.lines().any(|l| contains_word(l, &variant));
-        let needle = if by_variant { variant.as_str() } else { id };
+    for (file, scope, lines, hit) in &prepared {
+        let n = lines.len();
+        let named = hit.iter().any(|&h| h);
+        let shown: Vec<bool> = if *scope == Scope::Whole || (!named && !any_hits) {
+            vec![true; n]
+        } else if named {
+            let mut shown = vec![false; n];
+            for (i, &is_hit) in hit.iter().enumerate() {
+                if is_hit {
+                    for s in &mut shown[i.saturating_sub(BEFORE)..(i + AFTER + 1).min(n)] {
+                        *s = true;
+                    }
+                }
+            }
+            shown
+        } else {
+            // Another file names it, this one never does: nothing to show.
+            continue;
+        };
         out.push_str("<h2>");
         escape(file.path, &mut out);
         out.push_str("</h2><pre>");
-        for (i, line) in file.text.lines().enumerate() {
-            let hit = contains_word(line, needle);
-            let first = hit && !anchored;
-            anchored |= hit;
+        for (i, line) in lines.iter().enumerate() {
+            if shown[i] && i > 0 && !shown[i - 1] {
+                out.push_str("<span class=\"gap\">&hellip;</span>");
+            }
+            let first = hit[i] && !anchored;
+            anchored |= hit[i];
             out.push_str("<span class=\"l");
-            if hit {
+            if hit[i] {
                 out.push_str(" hit");
+            }
+            if !shown[i] {
+                out.push_str(" x");
             }
             out.push('"');
             if first {
@@ -315,39 +380,40 @@ impl Game<'_> {
 mod tests {
     use super::*;
 
-    fn paths(entity: &str) -> Vec<&'static str> {
-        files_for(entity).iter().map(|f| f.path).collect()
+    fn paths(entity: &str) -> Vec<(&'static str, Scope)> {
+        files_for(entity)
+            .iter()
+            .map(|(f, scope)| (f.path, *scope))
+            .collect()
+    }
+
+    const SRC: &str = "crates/horizon-client/src/";
+
+    #[test]
+    fn a_mob_gets_its_own_files_whole_then_the_shared_code_by_hits() {
+        let bat = paths("minecraft:bat");
+        assert_eq!(bat[0], (format!("{SRC}mobs/bat.rs").as_str(), Scope::Whole));
+        assert!(bat[1..].iter().all(|(_, scope)| *scope == Scope::Hits));
+        assert!(bat.iter().any(|(p, _)| p.ends_with("mobs/species.rs")));
+        // No code of its own: the shared files alone, all by hits.
+        let cow = paths("minecraft:cow");
+        assert!(cow.iter().all(|(_, scope)| *scope == Scope::Hits));
+        assert!(cow.iter().any(|(p, _)| p.ends_with("mobs/anim.rs")));
     }
 
     #[test]
-    fn a_mob_gets_its_own_files_then_the_species_table() {
-        assert_eq!(
-            paths("minecraft:bat"),
-            [
-                "crates/horizon-client/src/mobs/bat.rs",
-                "crates/horizon-client/src/mobs/species.rs"
-            ]
-        );
-        // No code of its own: the table alone.
-        assert_eq!(
-            paths("minecraft:cow"),
-            ["crates/horizon-client/src/mobs/species.rs"]
-        );
-    }
-
-    #[test]
-    fn objects_get_their_file_and_no_species_table() {
+    fn objects_get_their_file_and_no_mob_code() {
         assert_eq!(
             paths("minecraft:bamboo_chest_raft"),
-            ["crates/horizon-client/src/game/boats.rs"]
+            [(format!("{SRC}game/boats.rs").as_str(), Scope::Hits)]
         );
         assert_eq!(
             paths("minecraft:chest_minecart"),
-            ["crates/horizon-client/src/game/minecarts.rs"]
+            [(format!("{SRC}game/minecarts.rs").as_str(), Scope::Hits)]
         );
         assert_eq!(
             paths("minecraft:armor_stand"),
-            ["crates/horizon-client/src/game/armor_stands.rs"]
+            [(format!("{SRC}game/armor_stands.rs").as_str(), Scope::Hits)]
         );
     }
 
@@ -365,12 +431,48 @@ mod tests {
             path: "demo.rs",
             text: "fn a() {}\nSpecies::Bat => x < y && z, // Bat\nSpecies::Bee => 1,\n",
         };
-        let html = render_html("minecraft:bat", &[&file]);
+        let html = render_html("minecraft:bat", &[(&file, Scope::Whole)]);
         assert!(html.contains("<title>bat</title>"));
         assert_eq!(html.matches("class=\"l hit\"").count(), 1);
         assert!(html.contains("id=\"first\" data-n=\"2\""));
         assert!(html.contains("x &lt; y &amp;&amp; z"));
         assert!(html.contains("<b>fn</b>"));
         assert!(html.contains("<i>// Bat</i>"));
+    }
+
+    #[test]
+    fn a_hits_file_shows_the_surroundings_and_hides_the_rest() {
+        let text: String = (1..=60)
+            .map(|n| {
+                if n == 30 {
+                    "Species::Hen => 1,\n".to_owned()
+                } else {
+                    format!("let line{n} = {n};\n")
+                }
+            })
+            .collect();
+        let hit_file = SourceFile {
+            path: "shared.rs",
+            text: Box::leak(text.into_boxed_str()),
+        };
+        let other = SourceFile {
+            path: "other.rs",
+            text: "let nothing = 1;\n",
+        };
+        let html = render_html(
+            "minecraft:hen",
+            &[(&hit_file, Scope::Hits), (&other, Scope::Hits)],
+        );
+        // Lines 27..=44 are the hit with 3 before and 14 after.
+        assert!(html.contains("class=\"l\" data-n=\"27\""));
+        assert!(html.contains("class=\"l\" data-n=\"44\""));
+        assert!(html.contains("class=\"l x\" data-n=\"26\""));
+        assert!(html.contains("class=\"l x\" data-n=\"45\""));
+        assert_eq!(html.matches("class=\"gap\"").count(), 1);
+        // Another file names it and this one never does: left out.
+        assert!(!html.contains("other.rs"));
+        // Nobody names it: every file shows whole.
+        let none = render_html("minecraft:hen", &[(&other, Scope::Hits)]);
+        assert!(none.contains("other.rs") && !none.contains("class=\"l x\""));
     }
 }
