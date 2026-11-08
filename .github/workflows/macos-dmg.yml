@@ -1,0 +1,67 @@
+# Builds Horizon.app and the .dmg for macOS on GitHub's own Mac runners (no self-hosted Mac mini, no Apple
+# account): Apple Silicon and Intel, signed ad hoc by packaging/macos/package.sh. The .dmg files land as
+# workflow artifacts (Actions tab → this run → Artifacts). Publishes no release.
+name: macOS DMG
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - '.github/workflows/macos-dmg.yml'
+      - 'launcher/**'
+      - 'packaging/macos/**'
+
+permissions:
+  contents: read
+
+jobs:
+  dmg:
+    name: dmg ${{ matrix.arch }}
+    runs-on: macos-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            target: aarch64-apple-darwin
+          - arch: x64
+            target: x86_64-apple-darwin
+    defaults:
+      run:
+        working-directory: launcher
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher
+          shared-key: macos-dmg-${{ matrix.arch }}
+      - name: Metal shaders compiled now, or at run time without the Metal toolchain
+        run: |
+          if ! xcrun metal --version > /dev/null 2>&1; then
+            echo "::notice::No Metal toolchain on this runner: GPUI compiles its shaders at run time"
+            echo "LAUNCHER_FEATURES=gpui_platform/runtime_shaders" >> "$GITHUB_ENV"
+          fi
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }} ${LAUNCHER_FEATURES:+--features "$LAUNCHER_FEATURES"}
+      - name: Package Horizon.app and the .dmg
+        run: |
+          python3 -m venv "$RUNNER_TEMP/dmg" && "$RUNNER_TEMP/dmg/bin/pip" install --quiet dmgbuild==1.6.5
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          rm -rf out && mkdir -p out
+          DMGBUILD="$RUNNER_TEMP/dmg/bin/dmgbuild" ../packaging/macos/package.sh \
+            target/${{ matrix.target }}/release/horizon-launcher "$version" out ${{ matrix.arch }}
+          rm -rf out/Horizon.app
+          ls -l out
+      - uses: actions/upload-artifact@v7
+        with:
+          name: horizon-launcher-macos-${{ matrix.arch }}-dmg
+          path: launcher/out/*.dmg
+          retention-days: 30
