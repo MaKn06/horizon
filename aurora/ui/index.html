@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora</title>
+<!-- Generated from the design mockup; edit freely. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one launcher window, a floating icon rail on the left, glass panels over a live canvas background. Dark only, by design. */
+:root{
+  color-scheme:dark;
+  --void:#07080c;        /* behind everything */
+  --ink:#eef0f6;         /* main text */
+  --ink-2:#a8adbd;       /* secondary text */
+  --ink-3:#6d7385;       /* hints */
+  --accent:#7aa2ff;      /* changeable in Darstellung */
+  --ok:#5fd4a0; --warn:#f2c46b; --bad:#ff7b8a;
+  --glass-a:.08;         /* glass fill strength */
+  --blur:28px;
+  --edge:rgba(255,255,255,.10);
+  --edge-hi:rgba(255,255,255,.22);
+  --f-display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Hanken Grotesk",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r-lg:22px; --r-md:14px; --r-sm:10px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+body.cc, body.cc *{cursor:none!important}
+#bg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+.app{position:relative;z-index:1;height:100%;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:72px 1fr;gap:14px}
+.glass{background:rgba(22,25,36,calc(var(--glass-a) + .30));
+  backdrop-filter:blur(var(--blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+  border:1px solid var(--edge);border-radius:var(--r-lg);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 20px 50px -20px rgba(0,0,0,.6)}
+.rail{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(140deg,var(--accent),color-mix(in oklab,var(--accent) 40%,#000));display:grid;place-items:center;font-family:var(--f-display);font-weight:700;margin-bottom:10px;color:#fff}
+.nav{width:48px;height:48px;border-radius:14px;border:0;background:transparent;color:var(--ink-3);display:grid;place-items:center;cursor:pointer;position:relative;transition:background .2s,color .2s}
+.nav:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+.nav[aria-current="page"]{color:var(--ink);background:rgba(255,255,255,.10);box-shadow:inset 0 0 0 1px var(--edge-hi)}
+.nav[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:14px;bottom:14px;width:3px;border-radius:3px;background:var(--accent)}
+.nav svg{width:22px;height:22px}
+.nav .tip{position:absolute;left:58px;white-space:nowrap;background:#11131b;border:1px solid var(--edge);padding:4px 9px;border-radius:8px;font-size:12px;color:var(--ink);opacity:0;pointer-events:none;transition:opacity .15s}
+.nav:hover .tip,.nav:focus-visible .tip{opacity:1}
+.rail .spacer{flex:1}
+.avatar{width:38px;height:38px;border-radius:50%;background:conic-gradient(from 200deg,#3b4a6b,#7aa2ff,#3b4a6b);border:2px solid rgba(255,255,255,.15)}
+main{min-width:0;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.top{display:flex;align-items:center;gap:12px;padding:10px 14px 10px 20px}
+.top h1{font-family:var(--f-display);font-size:18px;font-weight:600;margin:0;letter-spacing:-.01em}
+.top .sub{color:var(--ink-3);font-size:12px}
+.top .grow{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--edge);font-size:12px;color:var(--ink-2)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.view{flex:1;min-height:0;overflow:auto;padding-right:2px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+.view[hidden]{display:none}
+.grid{display:grid;gap:14px}
+.pad{padding:20px}
+.label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+h2{font-family:var(--f-display);font-weight:600;font-size:15px;margin:0}
+.btn{font:inherit;font-weight:600;border-radius:12px;border:1px solid var(--edge);background:rgba(255,255,255,.06);color:var(--ink);padding:9px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background .15s,border-color .15s,transform .1s}
+.btn:hover{background:rgba(255,255,255,.11);border-color:var(--edge-hi)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#0a0d16}
+.btn.primary:hover{background:color-mix(in oklab,var(--accent) 85%,#fff)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Start */
+.hero{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+.play-card{padding:26px;display:flex;flex-direction:column;gap:18px;min-height:280px;position:relative;overflow:hidden}
+.play-card .inst{font-family:var(--f-display);font-size:clamp(26px,3.4vw,40px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin:4px 0 0;text-wrap:balance}
+.play-card .meta{display:flex;flex-wrap:wrap;gap:8px}
+.mono{font-family:var(--f-mono);font-size:12px}
+.play-row{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.play{font-family:var(--f-display);font-size:17px;padding:15px 34px;border-radius:16px;box-shadow:0 10px 30px -8px color-mix(in oklab,var(--accent) 70%,transparent)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:16px;border-radius:var(--r-md);background:rgba(255,255,255,.04);border:1px solid var(--edge);display:flex;flex-direction:column;gap:4px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.stat:hover{border-color:var(--edge-hi)}
+.stat b{font-family:var(--f-display);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{color:var(--ink-3);font-size:12px}
+.news{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.news article{padding:18px;display:flex;flex-direction:column;gap:8px}
+.news p{margin:0;color:var(--ink-2)}
+/* lists */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px}
+.search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;background:rgba(0,0,0,.25);border:1px solid var(--edge)}
+.search input{all:unset;flex:1;color:var(--ink);font-size:14px}
+.search input::placeholder{color:var(--ink-3)}
+.seg{display:flex;padding:3px;border-radius:12px;background:rgba(0,0,0,.25);border:1px solid var(--edge)}
+.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--ink-2);padding:6px 12px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:rgba(255,255,255,.12);color:var(--ink)}
+.list{padding:6px}
+.row{display:grid;grid-template-columns:42px 1fr auto auto;gap:14px;align-items:center;padding:10px 12px;border-radius:var(--r-md);transition:background .15s}
+.row:hover{background:rgba(255,255,255,.04)}
+.row + .row{border-top:1px solid rgba(255,255,255,.04)}
+.ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:15px;color:#0b0e17}
+.row .name{font-weight:600}
+.row .desc{color:var(--ink-3);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .min{min-width:0}
+.badge{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--edge);color:var(--ink-2);white-space:nowrap}
+.badge.up{color:var(--warn);border-color:color-mix(in oklab,var(--warn) 40%,transparent)}
+.badge.off{color:var(--ink-3)}
+.switch{width:42px;height:24px;border-radius:999px;background:rgba(255,255,255,.12);border:0;position:relative;cursor:pointer;transition:background .2s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(18px)}
+.row.disabled .name,.row.disabled .ico{opacity:.45}
+.empty{padding:40px;text-align:center;color:var(--ink-3)}
+.foot{display:flex;justify-content:space-between;align-items:center;padding:4px 14px 14px;color:var(--ink-3);font-size:12px;gap:10px;flex-wrap:wrap}
+/* shaders */
+.shaders{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.shader{padding:0;overflow:hidden;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:transform .2s,border-color .2s}
+.shader:hover{transform:translateY(-2px);border-color:var(--edge-hi)}
+.shader[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 50px -20px rgba(0,0,0,.6)}
+.shader .pv{height:120px;position:relative}
+.shader .pv .sel{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.6);display:grid;place-items:center}
+.shader[aria-checked="true"] .sel{background:var(--accent);border-color:var(--accent)}
+.shader .body{padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.shader .body p{margin:0;color:var(--ink-3);font-size:12.5px}
+.bars{display:flex;gap:4px;align-items:center;font-size:11px;color:var(--ink-3)}
+.bars i{width:14px;height:4px;border-radius:2px;background:rgba(255,255,255,.15)}
+.bars i.on{background:var(--accent)}
+/* packs */
+.packs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.packs .col{display:flex;flex-direction:column;min-height:0}
+.packs .head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 8px}
+.pk{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:9px 10px;margin:0 8px;border-radius:12px;cursor:grab;user-select:none}
+.pk:hover{background:rgba(255,255,255,.05)}
+.pk.drag{opacity:.4}
+.pk.over{box-shadow:inset 0 2px 0 var(--accent)}
+.pk .tools{display:flex;gap:4px}
+.ib{width:30px;height:30px;border-radius:9px;border:1px solid var(--edge);background:rgba(255,255,255,.04);color:var(--ink-2);display:grid;place-items:center;cursor:pointer;font:inherit}
+.ib:hover{color:var(--ink);border-color:var(--edge-hi)}
+.ib:disabled{opacity:.3;cursor:default}
+.ib svg{width:15px;height:15px}
+.hint{color:var(--ink-3);font-size:12px;padding:6px 18px 16px}
+/* settings */
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bgs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bgopt{padding:0;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--edge);background:#000;cursor:pointer;color:inherit;font:inherit;text-align:left}
+.bgopt canvas{display:block;width:100%;aspect-ratio:16/10;max-width:100%}
+.bgopt span{display:block;padding:8px 10px;font-size:12.5px;font-weight:600;background:rgba(18,20,28,.9)}
+.bgopt[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.field{display:flex;flex-direction:column;gap:8px}
+.field .lbl{display:flex;justify-content:space-between;color:var(--ink-2);font-size:13px}
+.field .lbl output{font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.sw[aria-checked="true"]{border-color:#fff}
+.cursors{display:flex;gap:10px;flex-wrap:wrap}
+.cur{width:64px;height:64px;border-radius:var(--r-md);border:1px solid var(--edge);background:rgba(0,0,0,.25);display:grid;place-items:center;cursor:pointer;padding:0}
+.cur img{width:28px;height:28px;image-rendering:pixelated}
+.cur[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.cur.add{color:var(--ink-3);font-size:24px}
+.trypad{height:110px;border-radius:var(--r-md);border:1px dashed var(--edge-hi);display:grid;place-items:center;color:var(--ink-3);font-size:12.5px}
+.stack{display:flex;flex-direction:column;gap:18px}
+#cursor{position:fixed;left:0;top:0;z-index:100;pointer-events:none;image-rendering:pixelated;display:none;will-change:transform}
+.trail{position:fixed;z-index:99;pointer-events:none;width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.6}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;transition:.25s;z-index:50;padding:10px 16px;font-weight:600;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.note{font-size:11.5px;color:var(--ink-3)}
+/* modpacks on Start */
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 4px 0}
+.mps{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.mp{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.mp .art{height:86px;position:relative}
+.mp .art .ver{position:absolute;left:12px;bottom:10px}
+.mp .art .on{position:absolute;right:12px;top:10px}
+.mp .b{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.mp .b .meta{display:flex;gap:12px;color:var(--ink-3);font-size:12px;flex-wrap:wrap}
+.mp .b .act{display:flex;gap:8px;margin-top:auto}
+.mp .b .act .btn{padding:7px 12px;font-size:13px}
+.mp.new{border-style:dashed;align-items:center;justify-content:center;color:var(--ink-3);min-height:200px;cursor:pointer;font:inherit;gap:6px}
+.mp.new:hover{color:var(--ink);border-color:var(--edge-hi)}
+/* vertical drag */
+.pk .grip{color:var(--ink-3);cursor:grab;touch-action:none;display:grid;place-items:center;width:18px}
+.pk.lift{position:relative;z-index:5;background:rgba(40,46,66,.95);box-shadow:0 12px 30px -8px rgba(0,0,0,.6),inset 0 0 0 1px var(--edge-hi);cursor:grabbing;transition:none}
+.pk.shift{transition:transform .18s ease}
+#active .pk{grid-template-columns:18px 40px 1fr auto}
+/* settings form */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sect{padding:20px;display:flex;flex-direction:column;gap:16px}
+.sect h2{display:flex;align-items:center;gap:10px}
+.sect h2 .n{font-size:12px;color:var(--ink-3);font-weight:500;font-family:var(--f-body)}
+.inp{font:inherit;color:var(--ink);background:rgba(0,0,0,.28);border:1px solid var(--edge);border-radius:11px;padding:9px 12px;width:100%;min-width:0}
+.inp:focus{outline:none;border-color:var(--accent)}
+textarea.inp{font-family:var(--f-mono);font-size:12px;min-height:74px;resize:vertical;line-height:1.5}
+select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.pathrow{display:flex;gap:8px}
+.pathrow .inp{font-family:var(--f-mono);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pathrow .btn{flex:none;padding:8px 12px}
+.res{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.res span{color:var(--ink-3)}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{font:inherit;font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--edge);background:transparent;color:var(--ink-2);cursor:pointer}
+.presets button:hover{color:var(--ink);border-color:var(--edge-hi)}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.toggle .t{display:flex;flex-direction:column;gap:2px}
+.toggle .t small{color:var(--ink-3);font-size:12px}
+.ram{display:flex;flex-direction:column;gap:8px}
+.ramscale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;color:var(--ink-3)}
+.info{display:flex;gap:10px;padding:10px 12px;border-radius:11px;background:color-mix(in oklab,var(--accent) 10%,transparent);border:1px solid color-mix(in oklab,var(--accent) 25%,transparent);color:var(--ink-2);font-size:12.5px}
+.warnline{color:var(--warn);font-size:12px}
+.javas{display:flex;flex-direction:column;gap:6px}
+.jv{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:11px;border:1px solid var(--edge);cursor:pointer;background:transparent;color:inherit;font:inherit;text-align:left}
+.jv[aria-checked="true"]{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.jv .r{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink-3)}
+.jv[aria-checked="true"] .r{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
+.jv small{color:var(--ink-3);font-family:var(--f-mono);font-size:11px}
+/* console */
+.console{position:fixed;right:max(24px,env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:min(560px,calc(100vw - 32px));height:300px;z-index:40;display:flex;flex-direction:column;overflow:hidden;background:rgba(10,12,18,.82)}
+.console[hidden]{display:none}
+.console header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--edge)}
+.console header b{font-family:var(--f-display);font-size:13px;flex:1}
+.console pre{margin:0;flex:1;overflow:auto;padding:10px 14px;font-family:var(--f-mono);font-size:11.5px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;word-break:break-all}
+.console .w{color:var(--warn)}.console .e{color:var(--bad)}.console .i{color:var(--ink-3)}
+/* accounts & skins */
+.acc-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px}
+.accs{display:flex;flex-direction:column;gap:8px}
+.acc{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--edge);background:rgba(255,255,255,.03);cursor:pointer;font:inherit;color:inherit;text-align:left}
+.acc[aria-checked="true"]{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.acc canvas{width:40px;height:40px;border-radius:9px;image-rendering:pixelated;background:#1a1d29}
+.acc .kind{font-size:12px;color:var(--ink-3)}
+.skinstage{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start}
+.skinview{border-radius:var(--r-md);background:radial-gradient(circle at 50% 35%,color-mix(in oklab,var(--accent) 22%,transparent),transparent 65%),rgba(0,0,0,.25);border:1px solid var(--edge);display:grid;place-items:center;padding:16px;height:300px;position:relative}
+.skinview canvas{image-rendering:pixelated;width:128px;height:256px}
+.skinview .flip{position:absolute;bottom:10px;left:50%;transform:translateX(-50%)}
+.library{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
+.sk{padding:8px 4px 6px;border-radius:12px;border:1px solid var(--edge);background:rgba(0,0,0,.2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font:inherit;color:var(--ink-2);font-size:11.5px}
+.sk canvas{width:40px;height:80px;image-rendering:pixelated}
+.sk[aria-checked="true"]{border-color:var(--accent);color:var(--ink)}
+.sk.add{justify-content:center;font-size:22px;color:var(--ink-3);min-height:110px}
+.capes{display:flex;gap:8px;flex-wrap:wrap}
+.cape{width:44px;height:64px;border-radius:8px;border:1px solid var(--edge);cursor:pointer;display:grid;place-items:center;color:var(--ink-3);font-size:11px;background:rgba(0,0,0,.2)}
+.cape[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+@media (max-width:1100px){.skinstage{grid-template-columns:1fr}.skinview{height:auto}}
+@media (max-width:980px){.hero,.settings,.packs,.cols,.acc-grid{grid-template-columns:1fr}.news{grid-template-columns:1fr}}
+@media (max-width:640px){
+  body{padding-block:10px}
+  .app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  .rail{order:2;flex-direction:row;justify-content:space-around;padding:6px}
+  .rail .logo,.rail .spacer,.rail .avatar{display:none}
+  .nav[aria-current="page"]::before{left:14px;right:14px;top:auto;bottom:-6px;width:auto;height:3px}
+  .nav .tip{display:none}
+  .row{grid-template-columns:42px 1fr auto}.row .badge{display:none}
+  .bgs{grid-template-columns:1fr 1fr 1fr}
+  .top .sub{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Aurora additions over the mockup's styles */
+body{padding-top:max(16px,env(safe-area-inset-top,0px))}
+body.mac .rail{padding-top:40px}
+body.mac .top{padding-left:20px}
+.avatar{padding:0;cursor:pointer;overflow:hidden}
+.avatar canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.top{user-select:none;-webkit-user-select:none}
+.top .ib{width:34px;height:34px}
+.banner{padding:12px 16px;display:flex;gap:12px;align-items:center;color:var(--ink-2)}
+.banner[hidden]{display:none}
+.banner b{color:var(--ink)}
+.banner .grow{flex:1}
+.menu-wrap{position:relative}
+.menu{position:absolute;left:0;top:calc(100% + 8px);min-width:260px;max-height:320px;overflow:auto;padding:6px;z-index:30;background:rgba(16,18,27,.94)}
+.menu[hidden]{display:none}
+.menu button{all:unset;display:flex;justify-content:space-between;gap:12px;width:100%;box-sizing:border-box;padding:9px 12px;border-radius:10px;cursor:pointer;color:var(--ink-2)}
+.menu button:hover,.menu button:focus-visible{background:rgba(255,255,255,.07);color:var(--ink)}
+.menu button small{color:var(--ink-3)}
+.linkbtn{all:unset;color:var(--accent);font-size:12px;cursor:pointer}
+.linkbtn:focus-visible{outline:2px solid var(--accent)}
+.signin{padding:14px;border-radius:var(--r-md);border:1px solid color-mix(in oklab,var(--accent) 40%,transparent);background:color-mix(in oklab,var(--accent) 10%,transparent);display:flex;flex-direction:column;gap:8px}
+.signin[hidden]{display:none}
+.signin .code{font-family:var(--f-mono);font-size:26px;letter-spacing:.18em;color:var(--ink);user-select:all}
+.modal-back{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}
+.modal-back[hidden]{display:none}
+.modal{width:min(440px,100%);padding:22px;display:flex;flex-direction:column;gap:16px;background:rgba(18,20,30,.92)}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px}
+.mp .art .icon{position:absolute;left:14px;top:12px;width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.25);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;color:#fff}
+.mp .art .on{right:12px;top:10px}
+.loading{padding:40px;text-align:center;color:var(--ink-3)}
+.err{color:var(--bad)}
+.console .s-err{color:var(--ink-2)}
+.console .s-info{color:var(--accent)}
+.shader .pv .tag{position:absolute;left:12px;bottom:10px}
+.stat b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:20px}
+.mp .art .ver{max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<img id="cursor" alt="">
+
+<div class="app">
+  <nav class="rail glass" aria-label="Bereiche">
+    <div class="logo" aria-hidden="true">A</div>
+    <button class="nav" data-v="start" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span class="tip">Start</span></button>
+    <button class="nav" data-v="mods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/></svg><span class="tip">Mods</span></button>
+    <button class="nav" data-v="shaders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="tip">Shader</span></button>
+    <button class="nav" data-v="packs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="16" cy="8" r="1.5"/></svg><span class="tip">Ressourcenpakete</span></button>
+    <button class="nav" data-v="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8v7H8zM8 10h8v6H8zM5 10.5v5.5M19 10.5v5.5M9 16v5M15 16v5"/></svg><span class="tip">Accounts &amp; Skins</span></button>
+    <div class="spacer"></div>
+    <button class="nav" data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="tip">Einstellungen</span></button>
+    <button class="nav" data-v="look"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18c1.7 0 2-1.3 1.3-2.4-.7-1.2 0-2.6 1.4-2.6H17a4 4 0 004-4c0-5-4-9-9-9z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg><span class="tip">Darstellung</span></button>
+    <button class="avatar" data-go="account" aria-label="Account wechseln"><canvas id="railHead" width="8" height="8"></canvas></button>
+  </nav>
+
+  <main>
+    <header class="top glass" id="topbar">
+      <div><h1 id="title">Start</h1><div class="sub" id="subtitle"></div></div>
+      <div class="grow"></div>
+      <span class="chip" id="statusChip"><span class="dot" id="statusDot"></span><span id="statusText">Bereit</span></span>
+      <button class="ib" id="consoleBtn" aria-label="Spielkonsole" title="Spielkonsole"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-5-6-5M12 19h8"/></svg></button>
+    </header>
+
+    <div class="banner glass" id="banner" hidden></div>
+
+    <!-- START -->
+    <section class="view" id="v-start">
+      <div class="grid">
+        <div class="hero">
+          <div class="glass play-card">
+            <span class="label" id="heroLabel"></span>
+            <h2 class="inst" id="heroName">…</h2>
+            <div class="meta" id="heroMeta"></div>
+            <div class="play-row">
+              <button class="btn primary play" id="playBtn">Spielen</button>
+              <div class="menu-wrap">
+                <button class="btn" id="switchBtn" aria-haspopup="true" aria-expanded="false">Instanz wechseln ▾</button>
+                <div class="menu glass" id="switchMenu" hidden></div>
+              </div>
+            </div>
+          </div>
+          <div class="glass pad stack">
+            <span class="label">Diese Instanz</span>
+            <div class="stats">
+              <button class="stat" data-go="mods"><b id="stMods">–</b><span>Mods aktiv</span></button>
+              <button class="stat" data-go="packs"><b id="stPacks">–</b><span>Ressourcenpakete aktiv</span></button>
+              <button class="stat" data-go="shaders"><b id="stShader">–</b><span>Shader</span></button>
+              <button class="stat" data-go="account"><b id="stAcc">–</b><span>Spielt als</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="sec-head"><h2>Deine Modpacks</h2><button class="btn" id="importPack">Modpack importieren</button></div>
+        <div class="mps" id="mpGrid"></div>
+      </div>
+    </section>
+
+    <!-- MODS -->
+    <section class="view" id="v-mods" hidden>
+      <div class="glass">
+        <div class="toolbar">
+          <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="modSearch" placeholder="Mods durchsuchen" aria-label="Mods durchsuchen"></label>
+          <div class="seg" role="group" aria-label="Filter" id="modFilter">
+            <button aria-pressed="true" data-f="all">Alle</button><button aria-pressed="false" data-f="on">Aktiv</button><button aria-pressed="false" data-f="off">Aus</button>
+          </div>
+          <button class="btn" id="modFolder">Ordner öffnen</button>
+          <button class="btn primary" id="addMod">+ Mod hinzufügen</button>
+        </div>
+        <div class="list" id="modList"></div>
+        <div class="foot"><span id="modCount"></span><span class="note" id="modNote"></span></div>
+      </div>
+    </section>
+
+    <!-- SHADERS -->
+    <section class="view" id="v-shaders" hidden>
+      <div class="grid">
+        <div class="sec-head"><span class="note" id="shaderNote"></span><div style="display:flex;gap:8px"><button class="btn" id="shaderFolder">Ordner öffnen</button><button class="btn primary" id="addShader">+ Shader hinzufügen</button></div></div>
+        <div class="shaders" id="shaderGrid" role="radiogroup" aria-label="Shader"></div>
+      </div>
+    </section>
+
+    <!-- PACKS -->
+    <section class="view" id="v-packs" hidden>
+      <div class="packs">
+        <div class="glass col"><div class="head"><h2>Verfügbar</h2><div style="display:flex;gap:8px"><button class="btn" id="packFolder">Ordner öffnen</button><button class="btn primary" id="addPack">+ Hinzufügen</button></div></div><div id="avail"></div><div class="hint">Klicke auf → um ein Paket zu aktivieren.</div></div>
+        <div class="glass col"><div class="head"><h2>Aktiv</h2><span class="label">oben = höchste Priorität</span></div><div id="active"></div><div class="hint">Am Griff nach oben oder unten ziehen, oder mit ↑ ↓ sortieren.</div></div>
+      </div>
+    </section>
+
+    <!-- ACCOUNT -->
+    <section class="view" id="v-account" hidden>
+      <div class="acc-grid">
+        <div class="glass sect">
+          <h2>Accounts</h2>
+          <div class="accs" id="accList" role="radiogroup" aria-label="Aktiver Account"></div>
+          <div class="presets"><button id="addMs">+ Microsoft-Konto anmelden</button><button id="addOff">+ Offline-Name</button></div>
+          <div class="signin" id="signinBox" hidden></div>
+          <span class="note" id="accNote">Die Anmeldung läuft im Browser bei Microsoft. Aurora sieht dein Passwort nie.</span>
+        </div>
+        <div class="glass sect">
+          <h2>Skin <span class="n" id="skinOwner"></span></h2>
+          <div class="skinstage">
+            <div class="skinview"><canvas id="skinBig" width="16" height="32"></canvas><button class="btn flip" id="flipSkin">Rückseite</button></div>
+            <div class="stack">
+              <div class="field"><span class="label">Modell</span>
+                <div class="seg" role="group" aria-label="Modell" id="armSeg"><button aria-pressed="true" data-a="classic">Klassisch (breite Arme)</button><button aria-pressed="false" data-a="slim">Schmal</button></div>
+              </div>
+              <div class="field"><span class="label">Bibliothek</span>
+                <div class="library" id="skinLib" role="radiogroup" aria-label="Skins"></div>
+                <span class="note">Skin-Datei: PNG mit 64 × 64 Pixeln.</span>
+              </div>
+              <div class="field"><span class="label">Umhang</span>
+                <div class="presets"><button id="capeLoad">Umhang-Datei laden</button><button id="capeOff">Ohne Umhang</button></div>
+              </div>
+              <div class="stack" style="gap:8px"><div><button class="btn primary" id="applySkin">Skin übernehmen</button></div><span class="note" id="skinNote"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="v-settings" hidden>
+      <div class="cols">
+        <div class="stack">
+          <div class="glass sect">
+            <h2>Java &amp; Leistung</h2>
+            <div class="info">Gilt für Java-Instanzen (Vanilla, Fabric, Quilt, Forge, NeoForge) und wird beim Start übernommen. Horizon selbst ist in Rust geschrieben und braucht kein Java.</div>
+            <div class="ram">
+              <div class="field"><div class="lbl"><span>Maximaler Arbeitsspeicher <span class="mono">-Xmx</span></span><output id="xmxOut"></output></div></div>
+              <input type="range" id="xmx" min="1" step="0.5" aria-label="Maximaler Arbeitsspeicher">
+              <div class="ramscale"><span>1 GB</span><span id="ramTotal"></span></div>
+              <span class="warnline" id="ramWarn" hidden>Mehr als 75 % deines Arbeitsspeichers: der Mac kann langsam werden.</span>
+            </div>
+            <div class="ram">
+              <div class="field"><div class="lbl"><span>Minimaler Arbeitsspeicher <span class="mono">-Xms</span></span><output id="xmsOut"></output></div></div>
+              <input type="range" id="xms" min="0.5" step="0.5" aria-label="Minimaler Arbeitsspeicher">
+              <div class="toggle"><span class="note">An Maximum koppeln</span><button class="switch" id="xmsLink" role="switch" aria-checked="false" aria-label="Xms an Xmx koppeln"></button></div>
+            </div>
+            <div class="field"><span class="label">Java-Laufzeit</span>
+              <div class="javas" id="javas" role="radiogroup" aria-label="Java-Laufzeit"></div>
+              <div class="pathrow"><input class="inp" id="javaPath" readonly aria-label="Java-Pfad" placeholder="Automatisch: die Java-Version, die die Minecraft-Version braucht"><button class="btn" id="pickJava">Durchsuchen…</button></div>
+            </div>
+            <div class="field"><div class="lbl"><label for="jvm">Eigene JVM-Argumente</label><button class="linkbtn" id="jvmPreset">Empfohlene einsetzen</button></div>
+              <textarea class="inp" id="jvm" spellcheck="false" placeholder="-XX:+UseG1GC -XX:MaxGCPauseMillis=50"></textarea>
+            </div>
+          </div>
+          <div class="glass sect">
+            <h2>Ordner</h2>
+            <div class="field"><span class="lbl"><span>Spielordner der ausgewählten Instanz</span></span>
+              <div class="pathrow"><input class="inp" id="gameDir" readonly aria-label="Spielordner"><button class="btn" id="openGameDir">Im Finder zeigen</button></div>
+              <span class="note">Jede Instanz hat ihren eigenen Ordner mit Welten, Mods und Paketen.</span>
+            </div>
+            <div class="field"><span class="lbl"><span>Minecraft-Installation (für die Vorbereitung von Horizon)</span></span>
+              <div class="pathrow"><input class="inp" id="mcDir" readonly aria-label="Minecraft-Installation" placeholder="Automatisch gesucht"><button class="btn" id="pickMcDir">Ändern…</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="glass sect">
+            <h2>Fenster</h2>
+            <div class="field"><span class="lbl"><span>Spielauflösung</span></span>
+              <div class="res"><input class="inp mono" id="resW" inputmode="numeric" aria-label="Breite"><span>×</span><input class="inp mono" id="resH" inputmode="numeric" aria-label="Höhe"></div>
+              <div class="presets" id="resPresets"><button data-r="1280x720">1280 × 720</button><button data-r="1920x1080">1920 × 1080</button><button data-r="2560x1440">2560 × 1440</button><button data-r="0x0">Spiel-Standard</button></div>
+            </div>
+            <div class="toggle"><div class="t">Im Vollbild starten<small>Hängt <span class="mono">--fullscreen</span> an</small></div><button class="switch" id="fsSw" role="switch" aria-checked="false" aria-label="Vollbild"></button></div>
+          </div>
+          <div class="glass sect">
+            <h2>Beim Spielstart</h2>
+            <div class="field"><label class="lbl" for="onLaunch"><span>Was passiert mit Aurora?</span></label>
+              <select class="inp" id="onLaunch"><option value="hide">Ausblenden, nach dem Spiel wieder zeigen</option><option value="close">Ganz schließen (spart Ressourcen)</option><option value="keep">Offen lassen (gut für Logs)</option></select>
+            </div>
+          </div>
+          <div class="glass sect">
+            <h2>Entwickler</h2>
+            <div class="toggle"><div class="t">Spielkonsole beim Start öffnen<small>Live-Ausgabe von stdout und stderr, um Abstürze und Mod-Konflikte zu finden</small></div><button class="switch" id="logSw" role="switch" aria-checked="false" aria-label="Spielkonsole"></button></div>
+          </div>
+          <div class="glass sect">
+            <h2>Horizon</h2>
+            <div class="toggle"><div class="t">Installierte Versionen<small id="hzVersions">–</small></div><button class="btn" id="hzInstall">Neueste installieren</button></div>
+            <div class="toggle"><div class="t">Spiel-Ressourcen vorbereiten<small>Liest die Texturen und Sounds aus deiner eigenen Minecraft-Installation</small></div><button class="btn" id="hzPrepare">Vorbereiten</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOOK -->
+    <section class="view" id="v-look" hidden>
+      <div class="settings">
+        <div class="glass pad stack">
+          <div class="field"><span class="label">Hintergrund</span>
+            <div class="bgs" role="radiogroup" aria-label="Hintergrund">
+              <button class="bgopt" data-bg="stars" role="radio"><canvas width="240" height="150"></canvas><span>Sternenhimmel</span></button>
+              <button class="bgopt" data-bg="net" role="radio"><canvas width="240" height="150"></canvas><span>Partikelnetz</span></button>
+              <button class="bgopt" data-bg="waves" role="radio"><canvas width="240" height="150"></canvas><span>Wellen</span></button>
+            </div>
+          </div>
+          <div class="field"><div class="lbl"><span>Glas-Unschärfe</span><output id="blurOut"></output></div><input type="range" id="blur" min="0" max="60" aria-label="Glas-Unschärfe"></div>
+          <div class="field"><div class="lbl"><span>Glas-Deckkraft</span><output id="opOut"></output></div><input type="range" id="op" min="0" max="40" aria-label="Glas-Deckkraft"></div>
+          <div class="field"><div class="lbl"><span>Animationstempo</span><output id="spOut"></output></div><input type="range" id="speed" min="0" max="20" aria-label="Animationstempo"></div>
+          <div class="field"><span class="label">Akzentfarbe</span><div class="swatches" id="swatches" role="radiogroup" aria-label="Akzentfarbe"></div></div>
+        </div>
+        <div class="glass pad stack">
+          <div class="field"><span class="label">Mauszeiger</span>
+            <div class="cursors" id="cursors" role="radiogroup" aria-label="Mauszeiger"></div>
+            <span class="note">PNG mit transparentem Hintergrund, ideal 32 × 32 px. Die Spitze liegt oben links.</span>
+          </div>
+          <div class="field"><div class="lbl"><span>Cursor-Größe</span><output id="csOut"></output></div><input type="range" id="curSize" min="16" max="64" step="2" aria-label="Cursor-Größe"></div>
+          <div class="toggle"><span>Leuchtspur</span><button class="switch" id="trailSw" role="switch" aria-checked="false" aria-label="Leuchtspur"></button></div>
+          <div class="trypad">Hier ausprobieren: Maus bewegen</div>
+          <div class="toggle"><span>Animationen anhalten, wenn Aurora im Hintergrund ist</span><button class="switch" id="pauseSw" role="switch" aria-checked="true" aria-label="Animationen anhalten"></button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast glass" id="toast" role="status"></div>
+<div class="console glass" id="console" hidden><header><span class="dot" id="conDot"></span><b id="conTitle">Spielkonsole</b><button class="ib" id="conClear" aria-label="Leeren" title="Leeren">⌫</button><button class="ib" id="conCopy" aria-label="Log kopieren" title="Log kopieren">⧉</button><button class="ib" id="conClose" aria-label="Konsole schließen">✕</button></header><pre id="conLog"></pre></div>
+<div class="modal-back" id="modal" hidden><div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalBody" class="stack"></div><div class="modal-actions"><button class="btn" id="modalCancel">Abbrechen</button><button class="btn primary" id="modalOk">OK</button></div></div></div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(window.__auroraPlatform==='macos')document.body.classList.add('mac');
+
+/* ---------- bridge to Rust (window.ipc), with a stand-in for a plain browser ---------- */
+const pending={},listeners={};let seq=0;
+window.__aurora={resolve(id,v,e){const p=pending[id];if(!p)return;delete pending[id];e!=null?p.rej(e):p.res(v)},emit(n,d){(listeners[n]||[]).forEach(f=>f(d))}};
+const on=(n,f)=>(listeners[n]=listeners[n]||[]).push(f);
+function call(cmd,args={}){if(!window.ipc){try{return Promise.resolve(demo(cmd,args))}catch(e){return Promise.reject(e)}}return new Promise((res,rej)=>{const id=++seq;pending[id]={res,rej};window.ipc.postMessage(JSON.stringify({id,cmd,args}))})}
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)};
+const fail=e=>{toast(String(e));log(String(e),'err','aurora')};
+
+/* ---------- state ---------- */
+const DEF={bg:'stars',blur:28,op:8,speed:10,accent:'#7aa2ff',cursor:'system',custom:null,curSize:32,trail:false,pause:true,
+  xmx:4,xms:2,link:false,javaHome:'',jvm:'',width:0,height:0,fullscreen:false,onLaunch:'keep',console:false,skins:[],offlineSkins:{}};
+let S={...DEF};
+let instances=[],accounts={accounts:[],offline:[]},installed={installed:[]},horizon={},ram=8,launcherFound=true;
+let sel=null,mods=[],packs=[],playing=false;
+let saveT=null;const save=()=>{clearTimeout(saveT);saveT=setTimeout(()=>call('saveSettings',{settings:S}).catch(fail),300)};
+
+/* ---------- views ---------- */
+const titles={start:['Start',''],mods:['Mods',''],shaders:['Shader','Ein Look für die Welt'],packs:['Ressourcenpakete','Texturen, Sounds und Schriften'],account:['Accounts & Skins','Wer spielt, und wie er aussieht'],settings:['Einstellungen','Java, Ordner, Fenster und Spielstart'],look:['Darstellung','Hintergrund, Glas, Farben und Cursor']};
+let view='start';
+function go(v){view=v;$$('.nav').forEach(b=>{if(b.dataset.v===v)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  $$('.view').forEach(s=>s.hidden=s.id!=='v-'+v);$('#title').textContent=titles[v][0];
+  $('#subtitle').textContent=titles[v][1]||(sel?sel.name+' · '+verText(sel):'');
+  if(v==='look')drawThumbs();if(v==='mods')loadMods();if(v==='packs'||v==='shaders')loadPacks();if(v==='account')renderAccounts();if(v==='settings')renderSettings();}
+$$('.nav').forEach(b=>b.addEventListener('click',()=>go(b.dataset.v)));
+$$('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+// The top bar moves the window (the title bar is hidden on macOS).
+$('#topbar').addEventListener('mousedown',e=>{if(e.button===0&&!e.target.closest('button,input,select'))call('drag')});
+document.querySelector('.rail').addEventListener('mousedown',e=>{if(e.button===0&&e.target===e.currentTarget)call('drag')});
+
+/* ---------- instances ---------- */
+const isJava=i=>!!(i&&i.java);
+function verText(i){if(!i)return'';if(i.java){const l=i.java.loader;return 'Minecraft '+i.java.minecraft+(l?' · '+(l.kind||'')+' '+(l.version||''):'')}return i.version?'Horizon '+i.version:'Horizon (neueste)'}
+const hours=s=>{const h=s/3600;return h<1?Math.round(s/60)+' Min.':(h<10?h.toFixed(1).replace('.',','):Math.round(h))+' Std.'};
+function ago(ms){if(!ms)return'noch nie gespielt';const d=(Date.now()-ms)/1000;if(d<3600)return'vor '+Math.max(1,Math.round(d/60))+' Min.';if(d<86400)return'vor '+Math.round(d/3600)+' Std.';return'vor '+Math.round(d/86400)+' Tagen'}
+function hue(str){let h=0;for(const c of String(str))h=(h*31+c.charCodeAt(0))%360;return h}
+function art(str){const h=hue(str);return `linear-gradient(135deg,hsl(${h} 45% 18%),hsl(${(h+40)%360} 70% 62%))`}
+async function loadInstances(){instances=await call('instances');sel=instances.find(i=>i.selected)||instances[0]||null;renderStart()}
+function renderStart(){const i=sel;
+  $('#heroLabel').textContent=i?'Zuletzt gespielt · '+ago(i.last_played_ms):'';
+  $('#heroName').textContent=i?i.name:'Keine Instanz';
+  $('#heroMeta').innerHTML=i?[`<span class="chip mono">${esc(verText(i))}</span>`,`<span class="chip">${hours(i.played_secs||0)} gespielt</span>`,isJava(i)?'<span class="chip">Java</span>':'<span class="chip">Horizon</span>'].join(''):'';
+  $('#playBtn').textContent=playing?'Läuft …':'Spielen';$('#playBtn').disabled=playing||!i;
+  const G=$('#mpGrid');G.innerHTML='';
+  instances.forEach(p=>{const c=document.createElement('div');c.className='glass mp';
+    c.innerHTML=`<div class="art" style="background:${art(p.id)}"><span class="icon">${esc((p.name||'?')[0].toUpperCase())}</span><span class="chip mono ver">${esc(verText(p))}</span>${p.id===sel?.id?'<span class="chip on"><span class="dot"></span>Ausgewählt</span>':''}</div>
+    <div class="b"><h2>${esc(p.name)}</h2><div class="meta"><span>${hours(p.played_secs||0)} gespielt</span><span>${esc(ago(p.last_played_ms))}</span></div>
+    <div class="act"><button class="btn primary">Spielen</button><button class="btn">Mods</button><button class="btn" aria-label="Ordner öffnen" title="Ordner öffnen">⋯</button></div></div>`;
+    const [pl,md,more]=c.querySelectorAll('.btn');
+    pl.onclick=async()=>{await select(p);play()};md.onclick=async()=>{await select(p);go('mods')};more.onclick=()=>call('openPath',{path:p.home}).catch(fail);
+    G.appendChild(c)});
+  const add=document.createElement('button');add.className='glass mp new';add.innerHTML='<span style="font-size:26px">+</span><span>Neues Modpack</span>';add.onclick=newInstance;G.appendChild(add);
+  refreshStats();if(view==='start')$('#subtitle').textContent=i?verText(i):''}
+async function select(p){if(sel?.id===p.id)return;try{await call('selectInstance',{id:p.id});instances.forEach(x=>x.selected=x.id===p.id);sel=p;mods=[];packs=[];renderStart();loadCounts()}catch(e){fail(e)}}
+$('#switchBtn').onclick=e=>{e.stopPropagation();const m=$('#switchMenu');m.hidden=!m.hidden;$('#switchBtn').setAttribute('aria-expanded',!m.hidden);
+  m.innerHTML='';instances.forEach(p=>{const b=document.createElement('button');b.innerHTML=`<span>${esc(p.name)}</span><small>${esc(verText(p))}</small>`;b.onclick=()=>{m.hidden=true;select(p)};m.appendChild(b)})};
+document.addEventListener('click',e=>{if(!e.target.closest('.menu-wrap'))$('#switchMenu').hidden=true});
+$('#importPack').onclick=()=>call('importInstance').then(r=>{if(r!=null){toast('Importiert');loadInstances()}}).catch(fail);
+
+/* small dialog */
+function dialog(title,html,okText='OK'){return new Promise(res=>{$('#modalTitle').textContent=title;$('#modalBody').innerHTML=html;$('#modalOk').textContent=okText;const m=$('#modal');m.hidden=false;
+  const first=m.querySelector('input,select');setTimeout(()=>first&&first.focus(),30);
+  const done=v=>{m.hidden=true;$('#modalOk').onclick=$('#modalCancel').onclick=null;res(v)};
+  $('#modalOk').onclick=()=>done(Object.fromEntries([...m.querySelectorAll('[name]')].map(x=>[x.name,x.value])));$('#modalCancel').onclick=()=>done(null);
+  m.onkeydown=e=>{if(e.key==='Escape')done(null);if(e.key==='Enter'&&e.target.tagName==='INPUT')$('#modalOk').click()}})}
+async function newInstance(){const r=await dialog('Neues Modpack',`
+  <label class="field"><span class="lbl"><span>Name</span></span><input class="inp" name="name" maxlength="40" placeholder="Mein Modpack"></label>
+  <label class="field"><span class="lbl"><span>Spiel</span></span><select class="inp" name="type"><option value="horizon">Horizon</option><option value="java">Minecraft: Java Edition</option></select></label>
+  <label class="field"><span class="lbl"><span>Minecraft-Version (nur Java)</span></span><input class="inp mono" name="minecraft" placeholder="latest oder 1.21.4"></label>
+  <label class="field"><span class="lbl"><span>Mod-Loader (nur Java)</span></span><select class="inp" name="loader"><option value="">Keiner</option><option>fabric</option><option>quilt</option><option>forge</option><option>neoforge</option></select></label>`,'Erstellen');
+  if(!r||!r.name.trim())return;toast('Wird erstellt …');
+  try{await call('createInstance',{name:r.name.trim(),minecraft:r.type==='java'?(r.minecraft.trim()||'latest'):'',loader:r.type==='java'?r.loader:''});await loadInstances();toast(r.name+' erstellt')}catch(e){fail(e)}}
+
+/* ---------- mods ---------- */
+let filter='all',q='';
+async function loadMods(){if(!sel)return;const L=$('#modList');if(!mods.length)L.innerHTML='<div class="loading">Wird geladen …</div>';
+  try{mods=await call('mods',{home:sel.home,java:isJava(sel)})}catch(e){mods=[];fail(e)}renderMods()}
+function renderMods(){const L=$('#modList');L.innerHTML='';
+  $('#modNote').textContent=isJava(sel)?(sel.java.loader?'Java-Mods (.jar) im Ordner mods':'Diese Java-Instanz hat keinen Mod-Loader: Mods laufen erst mit Fabric, Quilt, Forge oder NeoForge.'):'Horizon-Mods (.hmod), ein- und ausschaltbar wie unter Optionen › Mods im Spiel';
+  const list=mods.filter(m=>(filter==='all'||(filter==='on'&&m.on)||(filter==='off'&&!m.on))&&(m.title+' '+m.id).toLowerCase().includes(q));
+  if(!list.length)L.innerHTML=`<div class="empty">${mods.length?'Keine Mods gefunden.':'Noch keine Mods. Mit „+ Mod hinzufügen“ kommen sie dazu.'}</div>`;
+  list.forEach(m=>{const r=document.createElement('div');r.className='row'+(m.on?'':' disabled');const h=hue(m.id);
+    r.innerHTML=`<div class="ico" style="background:hsl(${h} 70% 70%)">${esc((m.title||'?')[0].toUpperCase())}</div><div class="min"><div class="name">${esc(m.title)}</div><div class="desc">${esc(m.id)}${m.native?' · nativ':''}</div></div>
+    <span class="badge ${m.on?'':'off'}">${esc(m.version?'v'+m.version:(m.on?'an':'aus'))}</span>
+    <button class="switch" role="switch" aria-checked="${m.on}" aria-label="${esc(m.title)} an oder aus"></button>`;
+    r.querySelector('.switch').onclick=async()=>{try{await call('toggleMod',{home:sel.home,java:isJava(sel),id:m.id,on:!m.on});m.on=!m.on;renderMods();toast(`${m.title} ${m.on?'an':'aus'}`)}catch(e){fail(e)}};
+    L.appendChild(r)});
+  const n=mods.filter(m=>m.on).length;$('#modCount').textContent=`${n} von ${mods.length} aktiv`;$('#stMods').textContent=n}
+$('#modSearch').addEventListener('input',e=>{q=e.target.value.toLowerCase();renderMods()});
+$$('#modFilter button').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.f;$$('#modFilter button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderMods()}));
+$('#addMod').onclick=()=>sel&&call('addMods',{home:sel.home,java:isJava(sel)}).then(n=>{if(n){toast(n+' Mod(s) hinzugefügt');loadMods()}}).catch(fail);
+$('#modFolder').onclick=()=>sel&&call('openPath',{path:sel.home+(isJava(sel)?'/mods':'/horizon-mods')}).catch(()=>call('openPath',{path:sel.home}).catch(fail));
+
+/* ---------- packs and shaders ---------- */
+async function loadPacks(){if(!sel)return;try{packs=await call('packs',{instance:sel.id})}catch(e){packs=[];fail(e)}renderPacks();renderShaders();refreshStats()}
+const res=()=>packs.filter(p=>p.kind==='resource'),shd=()=>packs.filter(p=>p.kind==='shader');
+function refreshStats(){const a=accounts.accounts.find(x=>x.selected),o=accounts.offline.find(x=>x.selected);$('#stAcc').textContent=a?a.name:o?o.name:'–';
+  if(packs.length||sel){$('#stPacks').textContent=res().filter(p=>p.enabled).length;const s=shd().find(p=>p.enabled);$('#stShader').textContent=s?s.title:'Aus'}}
+async function loadCounts(){if(!sel)return;try{[mods,packs]=await Promise.all([call('mods',{home:sel.home,java:isJava(sel)}),call('packs',{instance:sel.id})]);$('#stMods').textContent=mods.filter(m=>m.on).length;refreshStats()}catch(e){}}
+function renderShaders(){const G=$('#shaderGrid');G.innerHTML='';const list=shd();const cur=list.find(p=>p.enabled);
+  $('#shaderNote').textContent=isJava(sel)?'Shader-Pakete brauchen in Java-Instanzen einen Shader-Mod (z. B. Iris).':'Horizon-Shader (.hshader) und Shader-Pakete im Ordner shaderpacks.';
+  const card=(name,desc,bg,checked,click,tag)=>{const b=document.createElement('button');b.className='glass shader';b.setAttribute('role','radio');b.setAttribute('aria-checked',checked);
+    b.innerHTML=`<div class="pv" style="background:${bg}"><span class="sel">${checked?'✓':''}</span>${tag?`<span class="chip tag">${esc(tag)}</span>`:''}</div><div class="body"><h2>${esc(name)}</h2><p>${esc(desc)}</p></div>`;b.onclick=click;G.appendChild(b)};
+  card('Aus','Ohne Shader, die meisten FPS','linear-gradient(160deg,#5b7fb8,#9cc3e6 60%,#6a9a4a 61%,#4f7a36)',!cur,async()=>{if(!cur)return;try{await call('packOff',{file:cur.file,kind:'shader',instance:sel.id});await loadPacks();toast('Shader aus')}catch(e){fail(e)}});
+  list.forEach(p=>card(p.title,p.description||p.file,art(p.file),p.enabled,async()=>{if(p.enabled)return;try{await call('packOn',{file:p.file,kind:'shader',instance:sel.id});await loadPacks();toast(p.title+' ausgewählt')}catch(e){fail(e)}},/\.hshader$/i.test(p.file)?'Horizon':''));
+  if(!list.length){const n=document.createElement('div');n.className='glass empty';n.textContent='Noch keine Shader-Pakete. Mit „+ Shader hinzufügen“ eine .zip oder .hshader-Datei wählen.';G.appendChild(n)}}
+$('#addShader').onclick=$('#addPack').onclick=()=>sel&&call('addPacks',{instance:sel.id}).then(()=>loadPacks()).catch(fail);
+$('#shaderFolder').onclick=()=>sel&&call('openPath',{path:sel.home+'/shaderpacks'}).catch(()=>call('openPath',{path:sel.home}).catch(fail));
+$('#packFolder').onclick=()=>sel&&call('openPath',{path:sel.home+'/resourcepacks'}).catch(()=>call('openPath',{path:sel.home}).catch(fail));
+const svgUp='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',svgDn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',svgR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>',svgL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 6l-6 6 6 6"/></svg>';
+const grip='<span class="grip" aria-hidden="true"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.4"/><circle cx="7.5" cy="3" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13" r="1.4"/><circle cx="7.5" cy="13" r="1.4"/></svg></span>';
+function pkRow(p,inner){const r=document.createElement('div');r.className='pk';r.innerHTML=`<div class="ico" style="background:hsl(${hue(p.file)} 65% 72%);width:40px;height:40px">${esc((p.title||'?')[0].toUpperCase())}</div><div class="min"><div class="name" style="font-weight:600">${esc(p.title)}</div><div class="desc" style="color:var(--ink-3);font-size:12.5px">${esc(p.description||p.file)}</div></div><div class="tools">${inner}</div>`;return r}
+async function setOrder(order,off=[]){try{await call('packOrder',{instance:sel.id,order:order.map(p=>p.file),off:off.map(p=>p.file)});await loadPacks()}catch(e){fail(e);loadPacks()}}
+/* Vertical-only drag: the row follows the pointer on Y alone, clamped to the list; the others slide away. */
+function vDrag(row,i,rows,act){row.addEventListener('pointerdown',e=>{if(e.target.closest('.ib')||e.button!==0)return;e.preventDefault();row.setPointerCapture(e.pointerId);
+  const y0=e.clientY,h=row.getBoundingClientRect().height,n=rows.length;let to=i;row.classList.add('lift');rows.forEach(r=>r!==row&&r.classList.add('shift'));
+  const mv=ev=>{const dy=Math.max(-i*h,Math.min((n-1-i)*h,ev.clientY-y0));row.style.transform=`translateY(${dy}px)`;to=Math.max(0,Math.min(n-1,i+Math.round(dy/h)));
+    rows.forEach((r,k)=>{if(r===row)return;let s=0;if(to>i&&k>i&&k<=to)s=-h;if(to<i&&k<i&&k>=to)s=h;r.style.transform=s?`translateY(${s}px)`:''})};
+  const up=()=>{row.removeEventListener('pointermove',mv);row.removeEventListener('pointerup',up);row.removeEventListener('pointercancel',up);
+    if(to!==i){const a=[...act];const [m]=a.splice(i,1);a.splice(to,0,m);setOrder(a)}else renderPacks()};
+  row.addEventListener('pointermove',mv);row.addEventListener('pointerup',up);row.addEventListener('pointercancel',up)})}
+function renderPacks(){const A=$('#avail'),C=$('#active');A.innerHTML='';C.innerHTML='';const act=res().filter(p=>p.enabled),av=res().filter(p=>!p.enabled);
+  av.forEach(p=>{const r=pkRow(p,`<button class="ib" aria-label="${esc(p.title)} aktivieren">${svgR}</button>`);r.style.cursor='default';r.querySelector('.ib').onclick=async()=>{try{await call('packOn',{file:p.file,kind:'resource',instance:sel.id});await loadPacks();toast(p.title+' aktiviert')}catch(e){fail(e)}};A.appendChild(r)});
+  if(!av.length)A.innerHTML='<div class="empty">Keine weiteren Pakete. Mit „+ Hinzufügen“ eine .zip wählen.</div>';
+  act.forEach((p,i)=>{const r=pkRow(p,`<button class="ib" aria-label="nach oben" ${i===0?'disabled':''}>${svgUp}</button><button class="ib" aria-label="nach unten" ${i===act.length-1?'disabled':''}>${svgDn}</button><button class="ib" aria-label="${esc(p.title)} deaktivieren">${svgL}</button>`);
+    const [u,d,x]=r.querySelectorAll('.ib');const sw=(a,b)=>{const o=[...act];[o[a],o[b]]=[o[b],o[a]];setOrder(o)};u.onclick=()=>sw(i-1,i);d.onclick=()=>sw(i+1,i);
+    x.onclick=async()=>{try{await call('packOff',{file:p.file,kind:'resource',instance:sel.id});await loadPacks();toast(p.title+' deaktiviert')}catch(e){fail(e)}};
+    r.insertAdjacentHTML('afterbegin',grip);r.style.touchAction='none';C.appendChild(r)});
+  const rows=[...C.querySelectorAll('.pk')];rows.forEach((r,i)=>vDrag(r,i,rows,act));
+  if(!act.length)C.innerHTML='<div class="empty">Kein Paket aktiv: das Spiel nutzt seine eigenen Texturen.</div>'}
+
+/* ---------- background ---------- */
+const cv=$('#bg'),cx=cv.getContext('2d');let W=0,H=0,DPR=1;
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR}
+addEventListener('resize',resize);resize();
+const mouse={x:-9999,y:-9999};const rnd=(a,b)=>a+Math.random()*(b-a);
+function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
+function mkStars(w,h){return{st:Array.from({length:Math.round(w*h/2600)},()=>({x:rnd(0,w),y:rnd(0,h),r:rnd(.3,1.4),p:rnd(0,6.28),s:rnd(.4,1.6),z:rnd(.2,1)})),neb:Array.from({length:4},()=>({x:rnd(0,w),y:rnd(0,h*.8),r:rnd(.25,.5)*Math.max(w,h),a:rnd(0,6.28)})),met:null}}
+function drawStars(c,w,h,t,s,acc){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#04050b');g.addColorStop(1,'#0b0f22');c.fillStyle=g;c.fillRect(0,0,w,h);
+  s.neb.forEach((n,i)=>{const x=n.x+Math.cos(t*.00005+n.a)*w*.05,y=n.y+Math.sin(t*.00004+n.a)*h*.05;const rg=c.createRadialGradient(x,y,0,x,y,n.r);rg.addColorStop(0,hexA(i%2?acc:'#b07aff',.16));rg.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=rg;c.fillRect(0,0,w,h)});
+  s.st.forEach(p=>{const a=.35+.65*Math.abs(Math.sin(t*.001*p.s+p.p));const x=(p.x-t*.004*p.z)%w;c.fillStyle=`rgba(235,240,255,${a*p.z})`;c.beginPath();c.arc(x<0?x+w:x,p.y,p.r,0,6.28);c.fill()});
+  if(!s.met&&Math.random()<.004)s.met={x:rnd(w*.2,w),y:rnd(0,h*.4),l:0};
+  if(s.met){const m=s.met;m.l+=1;const len=Math.min(m.l*8,140),x=m.x-m.l*7,y=m.y+m.l*3.5;const lg=c.createLinearGradient(x,y,x+len,y-len/2);lg.addColorStop(0,'rgba(255,255,255,.9)');lg.addColorStop(1,'rgba(255,255,255,0)');c.strokeStyle=lg;c.lineWidth=1.5;c.beginPath();c.moveTo(x,y);c.lineTo(x+len,y-len/2);c.stroke();if(m.l>60)s.met=null}}
+function mkNet(w,h){return{p:Array.from({length:Math.max(26,Math.min(110,Math.round(w*h/14000)))},()=>({x:rnd(0,w),y:rnd(0,h),vx:rnd(-.25,.25),vy:rnd(-.25,.25)}))}}
+function drawNet(c,w,h,t,s,acc,dt,mx,my){c.fillStyle='#06070d';c.fillRect(0,0,w,h);const rg=c.createRadialGradient(w*.7,h*.2,0,w*.7,h*.2,w*.8);rg.addColorStop(0,hexA(acc,.10));rg.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=rg;c.fillRect(0,0,w,h);
+  const D=Math.min(150,w*.18);s.p.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;
+    const dx=p.x-mx,dy=p.y-my,d=Math.hypot(dx,dy);if(d<120&&d>0){p.x+=dx/d*.8*dt;p.y+=dy/d*.8*dt}});
+  for(let i=0;i<s.p.length;i++){const a=s.p[i];for(let j=i+1;j<s.p.length;j++){const b=s.p[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<D){c.strokeStyle=hexA(acc,(1-d/D)*.35);c.lineWidth=1;c.beginPath();c.moveTo(a.x,a.y);c.lineTo(b.x,b.y);c.stroke()}}
+    const dm=Math.hypot(a.x-mx,a.y-my);if(dm<D*1.3){c.strokeStyle=`rgba(255,255,255,${(1-dm/(D*1.3))*.4})`;c.beginPath();c.moveTo(a.x,a.y);c.lineTo(mx,my);c.stroke()}}
+  s.p.forEach(p=>{c.fillStyle='rgba(220,230,255,.8)';c.beginPath();c.arc(p.x,p.y,1.6,0,6.28);c.fill()})}
+function drawWaves(c,w,h,t,s,acc){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#05070f');g.addColorStop(1,'#081321');c.fillStyle=g;c.fillRect(0,0,w,h);
+  for(let k=0;k<7;k++){const y0=h*(.42+k*.085),amp=h*(.02+k*.006),f=(1.2+k*.25)/w*6.28,sp=t*.0004*(1+k*.15);
+    c.beginPath();c.moveTo(0,h);for(let x=0;x<=w;x+=8){const y=y0+Math.sin(x*f+sp)*amp+Math.sin(x*f*.5-sp*1.3+k)*amp*.6;c.lineTo(x,y)}c.lineTo(w,h);c.closePath();
+    const lg=c.createLinearGradient(0,y0-amp,0,h);lg.addColorStop(0,hexA(acc,.10+k*.03));lg.addColorStop(1,'rgba(4,8,16,.9)');c.fillStyle=lg;c.fill();c.strokeStyle=hexA(acc,.25+k*.05);c.lineWidth=1;c.stroke()}}
+const renders={stars:[mkStars,drawStars],net:[mkNet,drawNet],waves:[()=>({}),drawWaves]};
+let scene=null,last=performance.now(),T=0,running=false;
+function frame(now){const dt=Math.min(3,(now-last)/16.7)*(S.speed/10);last=now;T+=dt*16.7;
+  cx.setTransform(DPR,0,0,DPR,0,0);renders[S.bg][1](cx,W,H,T,scene,S.accent,dt,mouse.x,mouse.y);
+  const paused=document.hidden||(S.pause&&!document.hasFocus());if(!reduce&&!paused)requestAnimationFrame(frame);else running=false}
+function kick(){if(running||reduce)return;running=true;last=performance.now();requestAnimationFrame(frame)}
+addEventListener('resize',()=>{scene=renders[S.bg][0](W,H);if(reduce)frame(performance.now())});
+document.addEventListener('visibilitychange',kick);addEventListener('focus',kick);
+let thumbsOn=false;
+function drawThumbs(){if(thumbsOn)return;thumbsOn=true;const opts=$$('.bgopt').map(b=>{const c=b.querySelector('canvas');return{b,x:c.getContext('2d'),s:renders[b.dataset.bg][0](240,150),t:0}});
+  (function tick(){if($('#v-look').hidden){thumbsOn=false;return}opts.forEach(o=>{o.t+=16.7*(S.speed/10);renders[o.b.dataset.bg][1](o.x,240,150,o.t,o.s,S.accent,S.speed/10,120,75)});if(!reduce)requestAnimationFrame(tick);else thumbsOn=false})()}
+function setBg(v){if(!renders[v])v='stars';S.bg=v;$$('.bgopt').forEach(b=>b.setAttribute('aria-checked',b.dataset.bg===v));scene=renders[v][0](W,H);if(reduce)frame(performance.now());kick()}
+$$('.bgopt').forEach(b=>b.addEventListener('click',()=>{setBg(b.dataset.bg);save()}));
+
+/* ---------- look ---------- */
+const root=document.documentElement.style;
+function applyLook(){root.setProperty('--blur',S.blur+'px');root.setProperty('--glass-a',S.op/100);root.setProperty('--accent',S.accent);
+  $('#blurOut').textContent=S.blur+' px';$('#opOut').textContent=S.op+' %';$('#spOut').textContent=(S.speed/10).toFixed(1).replace('.',',')+'×'}
+[['blur','blur'],['op','op'],['speed','speed']].forEach(([id,k])=>{const el=$('#'+id);el.addEventListener('input',()=>{S[k]=+el.value;applyLook();save()})});
+const accents=['#7aa2ff','#9ad8ff','#5fd4a0','#c49bff','#ff9fc4','#f2c46b','#ff8a6b'];
+accents.forEach(a=>{const b=document.createElement('button');b.className='sw';b.style.background=a;b.setAttribute('role','radio');b.setAttribute('aria-label','Akzentfarbe '+a);b.onclick=()=>{S.accent=a;applyLook();marks();save()};$('#swatches').appendChild(b)});
+function marks(){$$('.sw').forEach((b,i)=>b.setAttribute('aria-checked',accents[i]===S.accent))}
+function sw(id,k,after){const b=$(id);b.setAttribute('aria-checked',!!S[k]);b.onclick=()=>{S[k]=!S[k];b.setAttribute('aria-checked',S[k]);save();after&&after()}}
+
+/* ---------- cursor ---------- */
+const svgCur=(fill,stroke)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path d="M3 2l22 11-9.5 2.5L11 25z" fill="${fill}" stroke="${stroke}" stroke-width="1.6" stroke-linejoin="round"/></svg>`);
+const pixCur='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" shape-rendering="crispEdges"><path d="M1 1h2v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1H8v1h1v1h1v2H8v-1H7v-1H6v1H5v1H4v1H1z" fill="#fff"/><path d="M2 3h1v1h1v1h1v1h1v1h1v1h1v1H6v1h1v1h1v1H7v-1H6v-1H5v1H4v1H2z" fill="#3b4a6b"/></svg>');
+const presets=[{id:'system',label:'System'},{id:'glass',src:svgCur('rgba(255,255,255,.85)','#0a0d16'),label:'Glas'},{id:'pixel',src:pixCur,label:'Pixel'}];
+const curEl=$('#cursor');
+function curSrc(){if(S.cursor==='custom')return S.custom;const p=presets.find(p=>p.id===S.cursor);return p&&p.src}
+function renderCursors(){const C=$('#cursors');C.innerHTML='';
+  presets.concat(S.custom?[{id:'custom',src:S.custom,label:'Eigenes Bild'}]:[]).forEach(p=>{const b=document.createElement('button');b.className='cur';b.setAttribute('role','radio');b.setAttribute('aria-label',p.label);b.title=p.label;b.setAttribute('aria-checked',S.cursor===p.id);
+    b.innerHTML=p.src?`<img src="${p.src}" alt="">`:'<span style="font-size:11px;color:var(--ink-2)">System</span>';b.onclick=()=>{S.cursor=p.id;applyCursor();renderCursors();save()};C.appendChild(b)});
+  const add=document.createElement('button');add.className='cur add';add.setAttribute('aria-label','Eigenes Bild laden');add.title='Eigenes Bild laden';add.textContent='+';
+  add.onclick=()=>call('pickImage').then(r=>{if(!r)return;S.custom=r.url;S.cursor='custom';applyCursor();renderCursors();save();toast('Eigener Cursor geladen')}).catch(fail);C.appendChild(add)}
+function applyCursor(){const src=curSrc();if(src){curEl.src=src;curEl.style.width=curEl.style.height=S.curSize+'px';curEl.style.display='block';document.body.classList.add('cc')}else{curEl.style.display='none';document.body.classList.remove('cc')}
+  $('#csOut').textContent=S.curSize+' px'}
+$('#curSize').addEventListener('input',e=>{S.curSize=+e.target.value;applyCursor();save()});
+addEventListener('pointermove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;curEl.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+  if(S.trail&&!reduce){const d=document.createElement('div');d.className='trail';d.style.left=e.clientX-3+'px';d.style.top=e.clientY-3+'px';document.body.appendChild(d);
+    d.animate([{opacity:.6,transform:'scale(1)'},{opacity:0,transform:'scale(.2)'}],{duration:450,easing:'ease-out'}).onfinish=()=>d.remove()}});
+document.addEventListener('mouseleave',()=>{mouse.x=mouse.y=-9999;curEl.style.display='none'});
+document.addEventListener('mouseenter',()=>{if(curSrc())curEl.style.display='block'});
+
+/* ---------- settings ---------- */
+let javas=[];
+const gb=v=>(v%1?v.toString().replace('.',','):v)+' GB';
+function ramUi(){const max=Math.max(2,ram);$('#xmx').max=max;$('#xms').max=max;S.xmx=Math.min(S.xmx,max);if(S.link)S.xms=S.xmx;S.xms=Math.min(S.xms,S.xmx);
+  $('#xmx').value=S.xmx;$('#xms').value=S.xms;$('#xms').disabled=S.link;$('#xmxOut').textContent=gb(S.xmx);$('#xmsOut').textContent=gb(S.xms);$('#ramWarn').hidden=S.xmx<=max*.75;$('#ramTotal').textContent=max+' GB im Mac';$('#xmsLink').setAttribute('aria-checked',S.link)}
+$('#xmx').oninput=e=>{S.xmx=+e.target.value;ramUi();save()};$('#xms').oninput=e=>{S.xms=+e.target.value;ramUi();save()};
+$('#xmsLink').onclick=()=>{S.link=!S.link;ramUi();save()};
+function renderJavas(){const J=$('#javas');J.innerHTML='';const opts=[{label:'Automatisch',sub:'die Java-Version, die die Minecraft-Version braucht',home:''}].concat(javas.map(j=>({label:'Java '+j.version,sub:j.home,home:j.home,src:j.source})));
+  if(S.javaHome&&!opts.some(o=>o.home===S.javaHome))opts.push({label:'Eigene Java-Installation',sub:S.javaHome,home:S.javaHome});
+  opts.forEach(o=>{const b=document.createElement('button');b.className='jv';b.setAttribute('role','radio');b.setAttribute('aria-checked',S.javaHome===o.home);
+    b.innerHTML=`<span class="r"></span><span class="min"><b style="font-weight:600">${esc(o.label)}</b><br><small>${esc(o.sub)}</small></span><span class="badge">${o.home?(o.src==='mojang'?'Von Mojang':'Installiert'):'Empfohlen'}</span>`;
+    b.onclick=()=>{S.javaHome=o.home;renderJavas();save()};J.appendChild(b)});$('#javaPath').value=S.javaHome}
+$('#pickJava').onclick=()=>call('pickJava').then(h=>{if(h){S.javaHome=h;renderJavas();save()}}).catch(fail);
+$('#jvm').oninput=e=>{S.jvm=e.target.value;save()};
+$('#jvmPreset').onclick=()=>{S.jvm=$('#jvm').value='-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M';save()};
+$('#openGameDir').onclick=()=>sel&&call('openPath',{path:sel.home}).catch(fail);
+$('#pickMcDir').onclick=()=>call('pickFolder').then(async p=>{if(!p)return;try{horizon=await call('horizonSetting',{key:'minecraft-dir',value:p});$('#mcDir').value=horizon.minecraft_dir||p;toast('Minecraft-Installation gespeichert')}catch(e){fail(e)}}).catch(fail);
+const rw=$('#resW'),rh=$('#resH');
+[rw,rh].forEach(el=>el.oninput=()=>{el.value=el.value.replace(/\D/g,'').slice(0,5);S.width=+rw.value||0;S.height=+rh.value||0;save()});
+$$('#resPresets button').forEach(b=>b.onclick=()=>{const [w,h]=b.dataset.r.split('x').map(Number);S.width=w;S.height=h;rw.value=w||'';rh.value=h||'';save()});
+$('#onLaunch').onchange=e=>{S.onLaunch=e.target.value;save()};
+async function renderSettings(){ramUi();rw.value=S.width||'';rh.value=S.height||'';rw.placeholder='Breite';rh.placeholder='Höhe';$('#onLaunch').value=S.onLaunch;$('#jvm').value=S.jvm||'';
+  $('#gameDir').value=sel?sel.home:'';$('#mcDir').value=horizon.minecraft_dir||'';$('#hzVersions').textContent=(installed.installed||[]).join(', ')||'Noch keine: beim ersten Spielen wird die neueste installiert.';
+  renderJavas();try{javas=await call('javaList')||[];renderJavas()}catch(e){}}
+$('#hzInstall').onclick=async()=>{openConsole('Horizon wird installiert');status('Installiert …','busy');try{installed=await call('installLatest');toast('Horizon ist aktuell');renderSettings()}catch(e){fail(e)}status()};
+$('#hzPrepare').onclick=async()=>{openConsole('Horizon wird vorbereitet');status('Bereitet vor …','busy');try{await call('prepare');toast('Vorbereitet')}catch(e){fail(e)}status()};
+
+/* ---------- console and playing ---------- */
+const con=$('#console'),logEl=$('#conLog');
+function openConsole(title){$('#conTitle').textContent=title||'Spielkonsole';con.hidden=false}
+function log(line,stream,tag){const s=document.createElement('span');const l=String(line);
+  s.className=/\b(ERROR|FATAL|Exception|panicked)\b|^error:/i.test(l)?'e':/\bWARN(ING)?\b/.test(l)?'w':stream==='info'?'s-info':stream==='err'?'s-err':'';
+  s.textContent=l+'\n';const stick=logEl.scrollTop+logEl.clientHeight>=logEl.scrollHeight-20;logEl.appendChild(s);
+  while(logEl.childNodes.length>4000)logEl.firstChild.remove();if(stick)logEl.scrollTop=logEl.scrollHeight}
+on('log',d=>log(d.line,d.stream,d.tag));
+on('status',m=>{status(m,'busy');log('[Aurora] '+m,'info')});
+on('game',d=>{playing=d.state==='running';status(playing?'Spiel läuft':null,playing?'run':null);renderStart()});
+on('signin',d=>{const b=$('#signinBox');b.hidden=false;b.innerHTML=`<span>Öffne <a href="#" id="siLink" style="color:var(--accent)">${esc(d.link)}</a> und gib diesen Code ein:</span><span class="code">${esc(d.code)}</span><span class="note">Der Browser öffnet sich von selbst. Aurora wartet, bis du fertig bist.</span>`;
+  $('#siLink').onclick=e=>{e.preventDefault();call('openUrl',{url:d.link})}});
+$('#conClose').onclick=()=>con.hidden=true;$('#conClear').onclick=()=>logEl.textContent='';
+$('#consoleBtn').onclick=()=>con.hidden?openConsole():con.hidden=true;
+$('#conCopy').onclick=()=>{const t=logEl.textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Log kopiert'),()=>{const r=document.createRange();r.selectNodeContents(logEl);getSelection().removeAllRanges();getSelection().addRange(r);toast('Markiert: mit ⌘C kopieren')})};
+function status(text,kind){$('#statusText').textContent=text||(launcherFound?'Bereit':'Horizon-Launcher fehlt');const d=$('#statusDot');d.style.background=d.style.boxShadow='';
+  if(kind==='busy'||kind==='run'){d.style.background='var(--warn)';d.style.boxShadow='0 0 8px var(--warn)'}if(!launcherFound&&!text){d.style.background='var(--bad)';d.style.boxShadow='0 0 8px var(--bad)'}}
+async function play(){if(!sel||playing)return;playing=true;renderStart();if(S.console)openConsole('Spielkonsole · '+sel.name);
+  log(`[Aurora] ${sel.name} wird gestartet`,'info');status('Startet …','busy');
+  try{await call('launch',{instance:sel.id,java:isJava(sel),settings:S});loadInstances()}catch(e){fail(e);openConsole('Spielkonsole · '+sel.name);
+    if(/sign|account|Microsoft|own/i.test(e))banner('Zum Spielen brauchst du ein Microsoft-Konto, das Minecraft: Java Edition besitzt.','Anmelden',()=>go('account'))}
+  playing=false;status();renderStart()}
+$('#playBtn').onclick=play;
+function banner(text,action,fn){const b=$('#banner');b.hidden=false;b.innerHTML=`<span>${esc(text)}</span><span class="grow"></span>${action?`<button class="btn primary" id="bnGo">${esc(action)}</button>`:''}<button class="ib" id="bnX" aria-label="Schließen">✕</button>`;
+  if(action)$('#bnGo').onclick=()=>{b.hidden=true;fn()};$('#bnX').onclick=()=>b.hidden=true}
+
+/* ---------- accounts and skins (default skins are drawn here, no game textures) ---------- */
+function makeSkin(p){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const f=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
+  f(p.skin,0,8,32,8);f(p.hair,8,0,16,8);f(p.hair,0,8,32,3);f(p.hair,24,8,8,8);f(p.hair,0,8,2,8);f(p.hair,22,8,2,8);
+  f(p.hair,8,8,8,2);f('#ffffff',9,12,2,1);f('#ffffff',13,12,2,1);f(p.eye,10,12,1,1);f(p.eye,14,12,1,1);f(p.mouth,11,14,2,1);
+  f(p.shirt,16,20,24,12);f(p.shirt,20,16,16,4);f(p.trim,20,20,8,1);f(p.trim,23,21,2,11);
+  f(p.shirt,40,16,16,16);f(p.skin,40,29,16,3);f(p.shirt,32,48,16,16);f(p.skin,32,61,16,3);
+  f(p.pants,0,16,16,16);f(p.shoes,0,29,16,3);f(p.pants,16,48,16,16);f(p.shoes,16,61,16,3);return c.toDataURL()}
+const builtins=[
+ {n:'Wanderer',url:makeSkin({skin:'#c99b78',hair:'#3b2a1e',eye:'#2b4a7a',mouth:'#8a5a44',shirt:'#3f6f62',trim:'#2c4f46',pants:'#2f3550',shoes:'#22201f'}),slim:false},
+ {n:'Taucherin',url:makeSkin({skin:'#e3b796',hair:'#d9a441',eye:'#2a7a6a',mouth:'#b06a5a',shirt:'#2d6fa8',trim:'#f2c46b',pants:'#1f3a5c',shoes:'#f2c46b'}),slim:true},
+ {n:'Schmied',url:makeSkin({skin:'#8a5c3e',hair:'#1b1512',eye:'#1b1512',mouth:'#5a3a2a',shirt:'#6b4a33',trim:'#3a2a1e',pants:'#3a3330',shoes:'#1b1512'}),slim:false},
+ {n:'Nachtwache',url:makeSkin({skin:'#d8c0f0',hair:'#2a2340',eye:'#c49bff',mouth:'#7a5a9a',shirt:'#2a2340',trim:'#c49bff',pants:'#1a1528',shoes:'#c49bff'}),slim:true}];
+const imgCache={};function img(url){if(!imgCache[url]){const i=new Image();i.src=url;imgCache[url]=new Promise(r=>{i.onload=()=>r(i);i.onerror=()=>r(null)})}return imgCache[url]}
+const UV={front:{head:[8,8],body:[20,20],rArm:[44,20],lArm:[36,52],rLeg:[4,20],lLeg:[20,52],hat:[40,8]},back:{head:[24,8],body:[32,20],rArm:[52,20],lArm:[44,52],rLeg:[12,20],lLeg:[28,52],hat:[56,8]}};
+async function drawFigure(ctx,url,isBack,slim){const im=await img(url);ctx.clearRect(0,0,16,32);if(!im)return;ctx.imageSmoothingEnabled=false;const u=isBack?UV.back:UV.front,a=slim?3:4;
+  const legacy=im.height===32;const d=(sx,sy,w,h,dx,dy,flip)=>{if(flip){ctx.save();ctx.translate(dx+w,dy);ctx.scale(-1,1);ctx.drawImage(im,sx,sy,w,h,0,0,w,h);ctx.restore()}else ctx.drawImage(im,sx,sy,w,h,dx,dy,w,h)};
+  let rA=u.rArm[0],lA=u.lArm[0];if(slim&&isBack){rA=51;lA=43}
+  const lArm=legacy?[isBack?52:44,20,true]:[lA,u.lArm[1],false],lLeg=legacy?[isBack?12:4,20,true]:[...u.lLeg,false];
+  const L=isBack?lArm:[rA,u.rArm[1],false],R=isBack?[rA,u.rArm[1],false]:lArm;
+  d(L[0],L[1],a,12,4-a,8,L[2]);d(R[0],R[1],a,12,12,8,R[2]);d(...u.body,8,12,4,8);
+  const LL=isBack?lLeg:[...u.rLeg,false],RL=isBack?[...u.rLeg,false]:lLeg;d(LL[0],LL[1],4,12,4,20,LL[2]);d(RL[0],RL[1],4,12,8,20,RL[2]);
+  d(...u.head,8,8,4,0);d(...u.hat,8,8,4,0)}
+async function drawHead(cv,url){const im=await img(url);const x=cv.getContext('2d');x.imageSmoothingEnabled=false;x.clearRect(0,0,cv.width,cv.height);if(!im)return;x.drawImage(im,8,8,8,8,0,0,cv.width,cv.height);x.drawImage(im,40,8,8,8,0,0,cv.width,cv.height)}
+const msSkins={};
+let who=null,skinSel=null,model='classic',back=false,cape=undefined;
+const lib=()=>builtins.concat(S.skins||[]);
+function people(){return accounts.accounts.map(a=>({kind:'ms',name:a.name,id:a.uuid,selected:a.selected,auth:a.authentication})).concat(accounts.offline.map(o=>({kind:'off',name:o.name,id:o.name,selected:o.selected})))}
+function skinOf(p){if(!p)return builtins[0].url;if(p.kind==='ms')return msSkins[p.id]?.skin||builtins[0].url;return S.offlineSkins?.[p.name]?.url||builtins[2].url}
+async function loadAccounts(){try{accounts=await call('accounts')||{accounts:[],offline:[]}}catch(e){fail(e)}accounts.accounts=accounts.accounts||[];accounts.offline=accounts.offline||[];
+  const cur=people().find(p=>p.selected);drawHead($('#railHead'),skinOf(cur));refreshStats();
+  for(const a of accounts.accounts)if(!msSkins[a.uuid])call('accountSkin',{uuid:a.uuid}).then(r=>{msSkins[a.uuid]=r;if(view==='account')renderAccounts();const c=people().find(p=>p.selected);drawHead($('#railHead'),skinOf(c))}).catch(()=>{});
+  if(!accounts.sign_in_configured)$('#accNote').textContent='Microsoft-Anmeldung ist in diesem Build nicht eingerichtet (HORIZON_MSA_CLIENT_ID fehlt). Offline-Namen gehen trotzdem.'}
+function renderAccounts(){const A=$('#accList');A.innerHTML='';const ps=people();if(!who||!ps.some(p=>p.id===who.id))who=ps.find(p=>p.selected)||ps[0]||null;
+  if(!ps.length)A.innerHTML='<div class="empty">Noch kein Account. Melde dich mit Microsoft an, oder lege einen Offline-Namen an.</div>';
+  ps.forEach(p=>{const b=document.createElement('div');b.className='acc';b.setAttribute('role','radio');b.tabIndex=0;b.setAttribute('aria-checked',p.id===who?.id);
+    const state=p.kind==='ms'?(p.auth&&p.auth.state&&p.auth.state!=='ready'&&p.auth.state!=='Ready'?'Neu anmelden nötig':'Microsoft-Konto'):'Offline-Name';
+    b.innerHTML=`<canvas width="8" height="8"></canvas><span class="min"><b style="font-weight:600">${esc(p.name)}</b><br><span class="kind">${esc(state)}</span></span><span style="display:flex;gap:6px;align-items:center">${p.selected?'<span class="badge" style="color:var(--ok)">Spielt</span>':'<button class="btn" data-a="sel" style="padding:5px 10px;font-size:12px">Spielen als</button>'}<button class="ib" data-a="rm" aria-label="${p.kind==='ms'?'Abmelden':'Entfernen'}" title="${p.kind==='ms'?'Abmelden':'Entfernen'}">✕</button></span>`;
+    drawHead(b.querySelector('canvas'),skinOf(p));
+    b.onclick=e=>{const a=e.target.closest('[data-a]')?.dataset.a;if(a==='sel')return selectAcc(p);if(a==='rm')return removeAcc(p);who=p;skinSel=null;cape=undefined;renderAccounts()};
+    A.appendChild(b)});
+  renderSkin()}
+async function selectAcc(p){try{await call('selectAccount',{who:p.id});await loadAccounts();renderAccounts();toast(p.name+' spielt jetzt')}catch(e){fail(e)}}
+async function removeAcc(p){const ok=await dialog(p.kind==='ms'?p.name+' abmelden?':p.name+' entfernen?',`<p class="note" style="font-size:13px">${p.kind==='ms'?'Die Anmeldedaten werden aus dem Schlüsselbund entfernt. Du kannst dich jederzeit wieder anmelden.':'Der Offline-Name und sein Skin werden vergessen.'}</p>`,p.kind==='ms'?'Abmelden':'Entfernen');
+  if(!ok)return;try{await call(p.kind==='ms'?'signOut':'forgetOffline',{who:p.id});await loadAccounts();renderAccounts()}catch(e){fail(e)}}
+$('#addMs').onclick=async()=>{const b=$('#signinBox');b.hidden=false;b.innerHTML='<span>Anmeldung wird vorbereitet …</span>';
+  try{await call('signIn');b.hidden=true;await loadAccounts();renderAccounts();toast('Angemeldet')}catch(e){b.innerHTML=`<span class="err">${esc(e)}</span>`}};
+$('#addOff').onclick=async()=>{const r=await dialog('Offline-Name','<label class="field"><span class="lbl"><span>Name (3 bis 16 Zeichen: Buchstaben, Ziffern, _)</span></span><input class="inp" name="name" maxlength="16" pattern="[A-Za-z0-9_]{3,16}"></label><p class="note">Offline-Namen spielen im Einzelspieler, im LAN und auf Servern im Offline-Modus. Dafür muss ein Microsoft-Konto mit Minecraft angemeldet sein.</p>','Anlegen');
+  if(!r)return;if(!/^[A-Za-z0-9_]{3,16}$/.test(r.name))return toast('3 bis 16 Zeichen: Buchstaben, Ziffern oder _');
+  try{await call('offline',{name:r.name});await loadAccounts();renderAccounts();toast(r.name+' angelegt')}catch(e){fail(e)}};
+function renderSkin(){const p=who;$('#skinOwner').textContent=p?'· '+p.name:'';const off=p?.kind==='off';
+  const cur=skinSel?lib().find(s=>s.url===skinSel):null;const url=cur?cur.url:skinOf(p);
+  const savedSlim=p?(p.kind==='ms'?!!msSkins[p.id]?.slim:!!S.offlineSkins?.[p.name]?.slim):false;
+  if(!skinSel&&model!==(savedSlim?'slim':'classic'))model=savedSlim?'slim':'classic';
+  drawFigure($('#skinBig').getContext('2d'),url,back,model==='slim');$('#flipSkin').textContent=back?'Vorderseite':'Rückseite';
+  $$('#armSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.a===model));
+  const L=$('#skinLib');L.innerHTML='';lib().forEach((s,i)=>{const b=document.createElement('button');b.className='sk';b.setAttribute('role','radio');b.setAttribute('aria-checked',s.url===url);
+    b.innerHTML=`<canvas width="16" height="32"></canvas><span>${esc(s.n)}</span>`;drawFigure(b.querySelector('canvas').getContext('2d'),s.url,false,s.slim);b.onclick=()=>{skinSel=s.url;model=s.slim?'slim':'classic';renderSkin()};L.appendChild(b)});
+  const add=document.createElement('button');add.className='sk add';add.textContent='+';add.title='Skin-Datei laden';add.setAttribute('aria-label','Skin-Datei laden');
+  add.onclick=()=>call('pickImage').then(async r=>{if(!r)return;const im=await img(r.url);if(!im||im.width!==64||(im.height!==64&&im.height!==32))return toast('Ein Skin braucht 64 × 64 Pixel.');
+    S.skins=(S.skins||[]).concat([{n:(r.name||'Skin').slice(0,12),url:r.url,slim:false}]);skinSel=r.url;save();renderSkin()}).catch(fail);L.appendChild(add);
+  $('#applySkin').disabled=!off;$('#capeLoad').disabled=$('#capeOff').disabled=!off;
+  $('#skinNote').textContent=!p?'':off?(cape===null?'Ohne Umhang. ':cape?'Neuer Umhang gewählt. ':'')+'Wird beim nächsten Spielen mit diesem Namen genutzt.':'Den Skin eines Microsoft-Kontos änderst du auf minecraft.net. Hier siehst du ihn, und die Bibliothek ist für deine Offline-Namen.'}
+$('#flipSkin').onclick=()=>{back=!back;renderSkin()};
+$$('#armSeg button').forEach(b=>b.onclick=()=>{model=b.dataset.a;skinSel=skinSel||skinOf(who);renderSkin()});
+$('#capeLoad').onclick=()=>call('pickImage').then(r=>{if(r){cape=r.url;renderSkin()}}).catch(fail);
+$('#capeOff').onclick=()=>{cape=null;renderSkin()};
+$('#applySkin').onclick=async()=>{const p=who;if(!p||p.kind!=='off')return;const url=skinSel||skinOf(p);
+  try{await call('setSkin',{name:p.name,skin:url,model,cape:cape||'',noCape:cape===null});S.offlineSkins={...(S.offlineSkins||{}),[p.name]:{url,slim:model==='slim'}};save();skinSel=null;cape=undefined;renderAccounts();
+    if(p.selected)drawHead($('#railHead'),url);toast('Skin für '+p.name+' gespeichert')}catch(e){fail(e)}};
+
+/* ---------- start ---------- */
+async function boot(){let st;
+  try{st=await call('state')}catch(e){status();banner('Aurora findet den Horizon-Launcher nicht: '+e);return}
+  S={...DEF,...(st.settings||{})};instances=st.instances||[];accounts=st.accounts||{accounts:[],offline:[]};accounts.accounts=accounts.accounts||[];accounts.offline=accounts.offline||[];
+  installed=st.installed||{installed:[]};horizon=st.horizon||{};ram=st.ram_gb||8;launcherFound=st.launcher_found!==false;
+  sel=instances.find(i=>i.selected)||instances[0]||null;
+  ['blur','op','speed'].forEach(k=>$('#'+k).value=S[k]);$('#curSize').value=S.curSize;
+  sw('#trailSw','trail');sw('#pauseSw','pause',kick);sw('#fsSw','fullscreen');sw('#logSw','console');
+  applyLook();marks();setBg(S.bg);renderCursors();applyCursor();renderStart();status();loadAccounts();loadCounts();
+  if(!accounts.accounts.length)banner('Noch kein Microsoft-Konto angemeldet. Zum Spielen brauchst du eines, das Minecraft: Java Edition besitzt.','Anmelden',()=>go('account'))}
+boot();
+
+/* ---------- stand-in data when the page runs in a plain browser (design checks) ---------- */
+function demo(cmd,a){const home='/Users/du/Library/Application Support/Horizon';
+  const inst=[{id:'horizon',name:'Horizon',home,selected:true,version:null,java:null,played_secs:148000,last_played_ms:Date.now()-7.2e6},
+    {id:'technik',name:'Technik & Redstone',home:home+'/instances/technik',selected:false,java:{minecraft:'1.21.4',loader:{kind:'fabric',version:'0.16.9'}},played_secs:43000,last_played_ms:Date.now()-3*864e5},
+    {id:'abenteuer',name:'Abenteuer',home:home+'/instances/abenteuer',selected:false,version:'v2026.10.13',java:null,played_secs:9000,last_played_ms:null}];
+  const D={state:{instances:inst,accounts:{accounts:[{name:'Steve_Beispiel',uuid:'0',selected:true}],offline:[{name:'Testprofil',selected:false}],sign_in_configured:true},installed:{installed:['v2026.11.02']},horizon:{minecraft_dir:'/Users/du/Library/Application Support/minecraft'},settings:{},ram_gb:16,launcher_found:true},
+    instances:inst,accounts:{accounts:[{name:'Steve_Beispiel',uuid:'0',selected:true}],offline:[{name:'Testprofil',selected:false}],sign_in_configured:true},
+    mods:[{id:'minimap',title:'Minikarte',version:'1.4.2',on:true},{id:'zoom',title:'Zoom',version:'1.0.3',on:true},{id:'clouds',title:'Bessere Wolken',version:'0.5.1',on:false},{id:'coords',title:'Koordinaten',version:'1.1.4',on:true}],
+    packs:[{kind:'resource',file:'Dunkle Menüs.zip',title:'Dunkle Menüs',description:'Dunkle Inventare',enabled:true},{kind:'resource',file:'Klare Schrift.zip',title:'Klare Schrift',description:'Schärfere Schrift',enabled:true},{kind:'resource',file:'Pastell.zip',title:'Pastell 16x',description:'Weiche Farben',enabled:false},{kind:'shader',file:'klarglas.hshader',title:'Klarglas',description:'Sanfte Schatten',enabled:true}],
+    javaList:[{version:'21.0.5',home:'/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home',source:'installed'}],accountSkin:null};
+  if(cmd==='accountSkin')throw 'offline';return D[cmd]??null}
+})();
+
+</script>
+</body>
+</html>

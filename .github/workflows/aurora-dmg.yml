@@ -1,0 +1,70 @@
+# Builds Aurora (aurora/: the glass launcher) for macOS on GitHub's Mac runners: Apple Silicon and
+# Intel. Each .app carries the Horizon launcher (launcher/), built in the same job, which Aurora
+# drives for installs, sign-in, packs and playing. Signed ad hoc; the .dmg files are this run's
+# artifacts (Actions tab → the run → Artifacts). Publishes no release.
+name: Aurora DMG
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - '.github/workflows/aurora-dmg.yml'
+      - 'aurora/**'
+
+permissions:
+  contents: read
+
+jobs:
+  dmg:
+    name: aurora ${{ matrix.arch }}
+    runs-on: macos-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            target: aarch64-apple-darwin
+          - arch: x64
+            target: x86_64-apple-darwin
+    env:
+      # Microsoft sign-in needs an Azure app's client id (docs/microsoft-account.md): a repository
+      # variable. Without it Aurora still plays with offline names.
+      HORIZON_MSA_CLIENT_ID: ${{ vars.HORIZON_MSA_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            launcher
+            aurora
+          shared-key: aurora-${{ matrix.arch }}
+      - name: Metal shaders compiled now, or at run time without the Metal toolchain
+        run: |
+          if ! xcrun metal --version > /dev/null 2>&1; then
+            echo "LAUNCHER_FEATURES=gpui_platform/runtime_shaders" >> "$GITHUB_ENV"
+          fi
+      - name: Build the Horizon launcher
+        working-directory: launcher
+        run: cargo build --release --locked --target ${{ matrix.target }} ${LAUNCHER_FEATURES:+--features "$LAUNCHER_FEATURES"}
+      - name: Build Aurora
+        working-directory: aurora
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Package Aurora.app and the .dmg
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' aurora/Cargo.toml | head -1)
+          bash aurora/packaging/package.sh \
+            aurora/target/${{ matrix.target }}/release/aurora \
+            launcher/target/${{ matrix.target }}/release/horizon-launcher \
+            "$version" out ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Aurora-macos-${{ matrix.arch }}
+          path: out/*.dmg
+          retention-days: 30

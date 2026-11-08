@@ -1,0 +1,26 @@
+[package]
+name = "aurora-launcher"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Aurora: a launcher for Horizon with a glass look, animated backgrounds and its own cursor"
+
+# Its own workspace, like launcher/: it builds apart from the game.
+[workspace]
+
+[[bin]]
+name = "aurora"
+path = "src/main.rs"
+
+[dependencies]
+wry = "0.57"
+tao = "0.37"
+rfd = "0.18"
+serde_json = "1"
+base64 = "0.22"
+ureq = "2.12"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true
