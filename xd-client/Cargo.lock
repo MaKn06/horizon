@@ -3064,11 +3064,14 @@ dependencies = [
 
 [[package]]
 name = "xd-client"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.22.1",
+ "objc2-app-kit",
+ "objc2-foundation",
  "rfd",
  "serde_json",
+ "sha2",
  "tao",
  "ureq",
  "wry",

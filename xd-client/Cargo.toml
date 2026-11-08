@@ -1,6 +1,6 @@
 [package]
 name = "xd-client"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 description = "xD Client: a launcher for Horizon with a glass look, animated backgrounds and its own cursor"
@@ -19,8 +19,13 @@ rfd = "0.18"
 serde_json = "1"
 base64 = "0.22"
 ureq = "2.12"
+sha2 = "0.10"
 
 [profile.release]
 opt-level = 3
 lto = "thin"
 strip = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSWorkspace"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSURL", "NSString"] }

@@ -31,7 +31,7 @@ body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
 body.cc, body.cc *{cursor:none!important}
 #bg{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
-.app{position:relative;z-index:1;height:100%;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:72px 1fr;gap:14px}
+.app{position:relative;z-index:1;height:100%;margin:0 auto;display:grid;grid-template-columns:72px 1fr;gap:14px}
 .glass{background:rgba(22,25,36,calc(var(--glass-a) + .30));
   backdrop-filter:blur(var(--blur)) saturate(160%);-webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
   border:1px solid var(--edge);border-radius:var(--r-lg);
@@ -223,8 +223,8 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .acc[aria-checked="true"]{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,transparent)}
 .acc canvas{width:40px;height:40px;border-radius:9px;image-rendering:pixelated;background:#1a1d29}
 .acc .kind{font-size:12px;color:var(--ink-3)}
-.skinstage{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start}
-.skinview{border-radius:var(--r-md);background:radial-gradient(circle at 50% 35%,color-mix(in oklab,var(--accent) 22%,transparent),transparent 65%),rgba(0,0,0,.25);border:1px solid var(--edge);display:grid;place-items:center;padding:16px;height:300px;position:relative}
+.skinstage{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start}
+.skinview{border-radius:var(--r-md);background:radial-gradient(circle at 50% 35%,color-mix(in oklab,var(--accent) 22%,transparent),transparent 65%),rgba(0,0,0,.25);border:1px solid var(--edge);display:grid;place-items:center;padding:0;height:340px;position:relative;overflow:hidden}
 .skinview canvas{image-rendering:pixelated;width:128px;height:256px}
 .skinview .flip{position:absolute;bottom:10px;left:50%;transform:translateX(-50%)}
 .library{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
@@ -235,7 +235,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .capes{display:flex;gap:8px;flex-wrap:wrap}
 .cape{width:44px;height:64px;border-radius:8px;border:1px solid var(--edge);cursor:pointer;display:grid;place-items:center;color:var(--ink-3);font-size:11px;background:rgba(0,0,0,.2)}
 .cape[aria-checked="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-@media (max-width:1100px){.skinstage{grid-template-columns:1fr}.skinview{height:auto}}
+@media (max-width:1100px){.skinstage{grid-template-columns:1fr}}
 @media (max-width:980px){.hero,.settings,.packs,.cols,.acc-grid{grid-template-columns:1fr}.news{grid-template-columns:1fr}}
 @media (max-width:640px){
   body{padding-block:10px}
@@ -286,6 +286,41 @@ body.mac .top{padding-left:20px}
 .shader .pv .tag{position:absolute;left:12px;bottom:10px}
 .stat b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:20px}
 .mp .art .ver{max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+
+/* catalog, start page extras, 3D skin */
+.catalog{padding:6px 6px 14px}
+.catalog .toolbar{padding:12px 10px}
+.catalog .src{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:0 10px}
+.cat{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:start;padding:14px;border-radius:var(--r-md);background:rgba(255,255,255,.035);border:1px solid var(--edge)}
+.cat:hover{border-color:var(--edge-hi)}
+.cat .cico{width:48px;height:48px;border-radius:12px;object-fit:cover;background:rgba(255,255,255,.06);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;color:#0b0e17;overflow:hidden}
+.cat .cico img{width:100%;height:100%;object-fit:cover;image-rendering:auto}
+.cat .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat .t a{color:inherit;text-decoration:none}
+.cat .t a:hover{text-decoration:underline}
+.cat .by{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat .sum{grid-column:2/4;font-size:12.5px;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.cat .btn{padding:6px 12px;font-size:12.5px}
+.cat .btn.done{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 40%,transparent);background:transparent;cursor:default}
+.more{display:flex;justify-content:center;padding:12px}
+.home-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px}
+.worlds{display:flex;flex-direction:column;gap:8px}
+.world{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--edge);background:rgba(255,255,255,.03);cursor:pointer;color:inherit;font:inherit;text-align:left}
+.world:hover{border-color:var(--edge-hi);background:rgba(255,255,255,.06)}
+.world img,.world .noimg{width:48px;height:48px;border-radius:9px;object-fit:cover;image-rendering:pixelated;background:linear-gradient(135deg,#2e4a3a,#5a8a4a)}
+.world small{color:var(--ink-3);font-size:12px}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.shot{padding:0;border:1px solid var(--edge);border-radius:10px;overflow:hidden;cursor:pointer;background:#000;aspect-ratio:16/9;max-width:100%}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.shot:hover{border-color:var(--edge-hi)}
+.skin3d{width:100%;height:100%;perspective:900px;display:grid;place-items:center;cursor:grab;touch-action:none;user-select:none}
+.skin3d:active{cursor:grabbing}
+.skin3d .rig{position:relative;width:0;height:0;transform-style:preserve-3d}
+.skin3d .part{position:absolute;left:0;top:0;transform-style:preserve-3d}
+.skin3d .face{position:absolute;left:0;top:0;backface-visibility:hidden;image-rendering:pixelated}
+.skin3d .face.o{backface-visibility:visible}
+@media (max-width:1100px){.home-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -344,6 +379,12 @@ body.mac .top{padding-left:20px}
         </div>
         <div class="sec-head"><h2>Deine Modpacks</h2><button class="btn" id="importPack">Modpack importieren</button></div>
         <div class="mps" id="mpGrid"></div>
+        <div class="home-row">
+          <div class="glass sect"><div class="sec-head" style="padding:0"><h2>Letzte Welten</h2><button class="linkbtn" id="savesFolder">Ordner öffnen</button></div><div class="worlds" id="worldList"></div></div>
+          <div class="glass sect"><div class="sec-head" style="padding:0"><h2>Screenshots</h2><button class="linkbtn" id="shotsFolder">Ordner öffnen</button></div><div class="shots" id="shotGrid"></div></div>
+        </div>
+        <div class="sec-head"><h2 id="popTitle">Beliebte Mods</h2><button class="btn" data-go="mods">Alle Mods</button></div>
+        <div class="catgrid" id="popular" style="padding:0"></div>
       </div>
     </section>
 
@@ -361,6 +402,7 @@ body.mac .top{padding-left:20px}
         <div class="list" id="modList"></div>
         <div class="foot"><span id="modCount"></span><span class="note" id="modNote"></span></div>
       </div>
+      <div class="glass catalog" data-kind="mod" style="margin-top:14px"></div>
     </section>
 
     <!-- SHADERS -->
@@ -368,6 +410,7 @@ body.mac .top{padding-left:20px}
       <div class="grid">
         <div class="sec-head"><span class="note" id="shaderNote"></span><div style="display:flex;gap:8px"><button class="btn" id="shaderFolder">Ordner öffnen</button><button class="btn primary" id="addShader">+ Shader hinzufügen</button></div></div>
         <div class="shaders" id="shaderGrid" role="radiogroup" aria-label="Shader"></div>
+        <div class="glass catalog" data-kind="shader"></div>
       </div>
     </section>
 
@@ -377,6 +420,7 @@ body.mac .top{padding-left:20px}
         <div class="glass col"><div class="head"><h2>Verfügbar</h2><div style="display:flex;gap:8px"><button class="btn" id="packFolder">Ordner öffnen</button><button class="btn primary" id="addPack">+ Hinzufügen</button></div></div><div id="avail"></div><div class="hint">Klicke auf → um ein Paket zu aktivieren.</div></div>
         <div class="glass col"><div class="head"><h2>Aktiv</h2><span class="label">oben = höchste Priorität</span></div><div id="active"></div><div class="hint">Am Griff nach oben oder unten ziehen, oder mit ↑ ↓ sortieren.</div></div>
       </div>
+      <div class="glass catalog" data-kind="resourcepack" style="margin-top:14px"></div>
     </section>
 
     <!-- ACCOUNT -->
@@ -392,7 +436,7 @@ body.mac .top{padding-left:20px}
         <div class="glass sect">
           <h2>Skin <span class="n" id="skinOwner"></span></h2>
           <div class="skinstage">
-            <div class="skinview"><canvas id="skinBig" width="16" height="32"></canvas><button class="btn flip" id="flipSkin">Rückseite</button></div>
+            <div class="skinview"><div class="skin3d" id="skin3d" aria-label="Skin, mit der Maus drehen"></div><button class="btn flip" id="flipSkin">Rückseite</button></div>
             <div class="stack">
               <div class="field"><span class="label">Modell</span>
                 <div class="seg" role="group" aria-label="Modell" id="armSeg"><button aria-pressed="true" data-a="classic">Klassisch (breite Arme)</button><button aria-pressed="false" data-a="slim">Schmal</button></div>
@@ -541,7 +585,7 @@ let view='start';
 function go(v){view=v;$$('.nav').forEach(b=>{if(b.dataset.v===v)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
   $$('.view').forEach(s=>s.hidden=s.id!=='v-'+v);$('#title').textContent=titles[v][0];
   $('#subtitle').textContent=titles[v][1]||(sel?sel.name+' · '+verText(sel):'');
-  if(v==='look')drawThumbs();if(v==='mods')loadMods();if(v==='packs'||v==='shaders')loadPacks();if(v==='account')renderAccounts();if(v==='settings')renderSettings();}
+  if(v==='look')drawThumbs();if(v==='mods')loadMods();if(v==='packs'||v==='shaders')loadPacks();if(['mods','shaders','packs'].includes(v))$$('#v-'+v+' .catalog').forEach(c=>mountCatalog(c));if(v==='account')renderAccounts();if(v==='settings')renderSettings();}
 $$('.nav').forEach(b=>b.addEventListener('click',()=>go(b.dataset.v)));
 $$('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 // The top bar moves the window (the title bar is hidden on macOS).
@@ -570,7 +614,7 @@ function renderStart(){const i=sel;
     pl.onclick=async()=>{await select(p);play()};md.onclick=async()=>{await select(p);go('mods')};more.onclick=()=>call('openPath',{path:p.home}).catch(fail);
     G.appendChild(c)});
   const add=document.createElement('button');add.className='glass mp new';add.innerHTML='<span style="font-size:26px">+</span><span>Neues Modpack</span>';add.onclick=newInstance;G.appendChild(add);
-  refreshStats();if(view==='start')$('#subtitle').textContent=i?verText(i):''}
+  refreshStats();if(view==='start')$('#subtitle').textContent=i?verText(i):'';loadHome()}
 async function select(p){if(sel?.id===p.id)return;try{await call('selectInstance',{id:p.id});instances.forEach(x=>x.selected=x.id===p.id);sel=p;mods=[];packs=[];renderStart();loadCounts()}catch(e){fail(e)}}
 $('#switchBtn').onclick=e=>{e.stopPropagation();const m=$('#switchMenu');m.hidden=!m.hidden;$('#switchBtn').setAttribute('aria-expanded',!m.hidden);
   m.innerHTML='';instances.forEach(p=>{const b=document.createElement('button');b.innerHTML=`<span>${esc(p.name)}</span><small>${esc(verText(p))}</small>`;b.onclick=()=>{m.hidden=true;select(p)};m.appendChild(b)})};
@@ -609,7 +653,8 @@ function renderMods(){const L=$('#modList');L.innerHTML='';
 $('#modSearch').addEventListener('input',e=>{q=e.target.value.toLowerCase();renderMods()});
 $$('#modFilter button').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.f;$$('#modFilter button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderMods()}));
 $('#addMod').onclick=()=>sel&&call('addMods',{home:sel.home,java:isJava(sel)}).then(n=>{if(n){toast(n+' Mod(s) hinzugefügt');loadMods()}}).catch(fail);
-$('#modFolder').onclick=()=>sel&&call('openPath',{path:sel.home+(isJava(sel)?'/mods':'/horizon-mods')}).catch(()=>call('openPath',{path:sel.home}).catch(fail));
+const openDir=sub=>sel&&call('openPath',{path:sel.home+sub,create:true}).catch(fail);
+$('#modFolder').onclick=()=>openDir(isJava(sel)?'/mods':'/horizon-mods');
 
 /* ---------- packs and shaders ---------- */
 async function loadPacks(){if(!sel)return;try{packs=await call('packs',{instance:sel.id})}catch(e){packs=[];fail(e)}renderPacks();renderShaders();refreshStats()}
@@ -625,8 +670,8 @@ function renderShaders(){const G=$('#shaderGrid');G.innerHTML='';const list=shd(
   list.forEach(p=>card(p.title,p.description||p.file,art(p.file),p.enabled,async()=>{if(p.enabled)return;try{await call('packOn',{file:p.file,kind:'shader',instance:sel.id});await loadPacks();toast(p.title+' ausgewählt')}catch(e){fail(e)}},/\.hshader$/i.test(p.file)?'Horizon':''));
   if(!list.length){const n=document.createElement('div');n.className='glass empty';n.textContent='Noch keine Shader-Pakete. Mit „+ Shader hinzufügen“ eine .zip oder .hshader-Datei wählen.';G.appendChild(n)}}
 $('#addShader').onclick=$('#addPack').onclick=()=>sel&&call('addPacks',{instance:sel.id}).then(()=>loadPacks()).catch(fail);
-$('#shaderFolder').onclick=()=>sel&&call('openPath',{path:sel.home+'/shaderpacks'}).catch(()=>call('openPath',{path:sel.home}).catch(fail));
-$('#packFolder').onclick=()=>sel&&call('openPath',{path:sel.home+'/resourcepacks'}).catch(()=>call('openPath',{path:sel.home}).catch(fail));
+$('#shaderFolder').onclick=()=>openDir('/shaderpacks');
+$('#packFolder').onclick=()=>openDir('/resourcepacks');
 const svgUp='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 15l6-6 6 6"/></svg>',svgDn='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>',svgR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>',svgL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 6l-6 6 6 6"/></svg>';
 const grip='<span class="grip" aria-hidden="true"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.4"/><circle cx="7.5" cy="3" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13" r="1.4"/><circle cx="7.5" cy="13" r="1.4"/></svg></span>';
 function pkRow(p,inner){const r=document.createElement('div');r.className='pk';r.innerHTML=`<div class="ico" style="background:hsl(${hue(p.file)} 65% 72%);width:40px;height:40px">${esc((p.title||'?')[0].toUpperCase())}</div><div class="min"><div class="name" style="font-weight:600">${esc(p.title)}</div><div class="desc" style="color:var(--ink-3);font-size:12.5px">${esc(p.description||p.file)}</div></div><div class="tools">${inner}</div>`;return r}
@@ -652,7 +697,7 @@ function renderPacks(){const A=$('#avail'),C=$('#active');A.innerHTML='';C.inner
 /* ---------- background ---------- */
 const cv=$('#bg'),cx=cv.getContext('2d');let W=0,H=0,DPR=1;
 function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR}
-addEventListener('resize',resize);resize();
+resize();
 const mouse={x:-9999,y:-9999};const rnd=(a,b)=>a+Math.random()*(b-a);
 function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
 function mkStars(w,h){return{st:Array.from({length:Math.round(w*h/2600)},()=>({x:rnd(0,w),y:rnd(0,h),r:rnd(.3,1.4),p:rnd(0,6.28),s:rnd(.4,1.6),z:rnd(.2,1)})),neb:Array.from({length:4},()=>({x:rnd(0,w),y:rnd(0,h*.8),r:rnd(.25,.5)*Math.max(w,h),a:rnd(0,6.28)})),met:null}}
@@ -674,16 +719,23 @@ function drawWaves(c,w,h,t,s,acc){const g=c.createLinearGradient(0,0,0,h);g.addC
     const lg=c.createLinearGradient(0,y0-amp,0,h);lg.addColorStop(0,hexA(acc,.10+k*.03));lg.addColorStop(1,'rgba(4,8,16,.9)');c.fillStyle=lg;c.fill();c.strokeStyle=hexA(acc,.25+k*.05);c.lineWidth=1;c.stroke()}}
 const renders={stars:[mkStars,drawStars],net:[mkNet,drawNet],waves:[()=>({}),drawWaves]};
 let scene=null,last=performance.now(),T=0,running=false;
-function frame(now){const dt=Math.min(3,(now-last)/16.7)*(S.speed/10);last=now;T+=dt*16.7;
-  cx.setTransform(DPR,0,0,DPR,0,0);renders[S.bg][1](cx,W,H,T,scene,S.accent,dt,mouse.x,mouse.y);
-  const paused=document.hidden||(S.pause&&!document.hasFocus());if(!reduce&&!paused)requestAnimationFrame(frame);else running=false}
-function kick(){if(running||reduce)return;running=true;last=performance.now();requestAnimationFrame(frame)}
-addEventListener('resize',()=>{scene=renders[S.bg][0](W,H);if(reduce)frame(performance.now())});
-document.addEventListener('visibilitychange',kick);addEventListener('focus',kick);
+let winFocus=true,bgErr=false,ticker=0;
+function paint(dt){if(!W||!H||!scene)return;try{cx.setTransform(DPR,0,0,DPR,0,0);renders[S.bg][1](cx,W,H,T,scene,S.accent,dt,mouse.x,mouse.y)}catch(e){if(!bgErr){bgErr=true;log('[xD Client] Hintergrund: '+e,'err')}}}
+function paused(){return document.hidden||(S.pause&&!winFocus)}
+function frame(now){if(now===undefined)now=performance.now();const dt=Math.min(3,Math.max(0,(now-last)/16.7))*(S.speed/10);last=now;T+=dt*16.7;paint(dt);
+  if(reduce||paused()){running=false;return}schedule()}
+// Animation frames first; a timer takes over when they stop coming (a web view that thinks it is hidden).
+function schedule(){const tok=++ticker;let done=false;requestAnimationFrame(t=>{if(tok!==ticker||done)return;done=true;frame(t)});
+  setTimeout(()=>{if(tok!==ticker||done)return;done=true;frame(performance.now())},120)}
+function kick(){if(running||reduce||paused())return;running=true;last=performance.now();schedule()}
+function redraw(){paint(0)}
+addEventListener('resize',()=>{resize();scene=renders[S.bg][0](W,H);redraw();kick()});
+addEventListener('focus',()=>{winFocus=true;kick()});addEventListener('blur',()=>{winFocus=false});
+document.addEventListener('visibilitychange',()=>{redraw();kick()});
 let thumbsOn=false;
 function drawThumbs(){if(thumbsOn)return;thumbsOn=true;const opts=$$('.bgopt').map(b=>{const c=b.querySelector('canvas');return{b,x:c.getContext('2d'),s:renders[b.dataset.bg][0](240,150),t:0}});
   (function tick(){if($('#v-look').hidden){thumbsOn=false;return}opts.forEach(o=>{o.t+=16.7*(S.speed/10);renders[o.b.dataset.bg][1](o.x,240,150,o.t,o.s,S.accent,S.speed/10,120,75)});if(!reduce)requestAnimationFrame(tick);else thumbsOn=false})()}
-function setBg(v){if(!renders[v])v='stars';S.bg=v;$$('.bgopt').forEach(b=>b.setAttribute('aria-checked',b.dataset.bg===v));scene=renders[v][0](W,H);if(reduce)frame(performance.now());kick()}
+function setBg(v){if(!renders[v])v='stars';S.bg=v;$$('.bgopt').forEach(b=>b.setAttribute('aria-checked',b.dataset.bg===v));resize();scene=renders[v][0](W,H);T=reduce?4000:T;redraw();kick()}
 $$('.bgopt').forEach(b=>b.addEventListener('click',()=>{setBg(b.dataset.bg);save()}));
 
 /* ---------- look ---------- */
@@ -760,12 +812,12 @@ $('#consoleBtn').onclick=()=>con.hidden?openConsole():con.hidden=true;
 $('#conCopy').onclick=()=>{const t=logEl.textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Log kopiert'),()=>{const r=document.createRange();r.selectNodeContents(logEl);getSelection().removeAllRanges();getSelection().addRange(r);toast('Markiert: mit ⌘C kopieren')})};
 function status(text,kind){$('#statusText').textContent=text||(launcherFound?'Bereit':'Horizon-Launcher fehlt');const d=$('#statusDot');d.style.background=d.style.boxShadow='';
   if(kind==='busy'||kind==='run'){d.style.background='var(--warn)';d.style.boxShadow='0 0 8px var(--warn)'}if(!launcherFound&&!text){d.style.background='var(--bad)';d.style.boxShadow='0 0 8px var(--bad)'}}
-async function play(){if(!sel||playing)return;playing=true;renderStart();if(S.console)openConsole('Spielkonsole · '+sel.name);
+async function play(opts={}){if(!sel||playing)return;playing=true;renderStart();if(S.console)openConsole('Spielkonsole · '+sel.name);
   log(`[xD Client] ${sel.name} wird gestartet`,'info');status('Startet …','busy');
-  try{await call('launch',{instance:sel.id,java:isJava(sel),settings:S});loadInstances()}catch(e){fail(e);openConsole('Spielkonsole · '+sel.name);
+  try{await call('launch',{instance:sel.id,java:isJava(sel),settings:S,world:opts.world||''});loadInstances()}catch(e){fail(e);openConsole('Spielkonsole · '+sel.name);
     if(/sign|account|Microsoft|own/i.test(e))banner('Zum Spielen brauchst du ein Microsoft-Konto, das Minecraft: Java Edition besitzt.','Anmelden',()=>go('account'))}
   playing=false;status();renderStart()}
-$('#playBtn').onclick=play;
+$('#playBtn').onclick=()=>play();
 function banner(text,action,fn){const b=$('#banner');b.hidden=false;b.innerHTML=`<span>${esc(text)}</span><span class="grow"></span>${action?`<button class="btn primary" id="bnGo">${esc(action)}</button>`:''}<button class="ib" id="bnX" aria-label="Schließen">✕</button>`;
   if(action)$('#bnGo').onclick=()=>{b.hidden=true;fn()};$('#bnX').onclick=()=>b.hidden=true}
 
@@ -822,7 +874,7 @@ function renderSkin(){const p=who;$('#skinOwner').textContent=p?'· '+p.name:'';
   const cur=skinSel?lib().find(s=>s.url===skinSel):null;const url=cur?cur.url:skinOf(p);
   const savedSlim=p?(p.kind==='ms'?!!msSkins[p.id]?.slim:!!S.offlineSkins?.[p.name]?.slim):false;
   if(!skinSel&&model!==(savedSlim?'slim':'classic'))model=savedSlim?'slim':'classic';
-  drawFigure($('#skinBig').getContext('2d'),url,back,model==='slim');$('#flipSkin').textContent=back?'Vorderseite':'Rückseite';
+  skin3d.set(url,model==='slim');skin3d.face(back);$('#flipSkin').textContent=back?'Vorderseite':'Rückseite';
   $$('#armSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.a===model));
   const L=$('#skinLib');L.innerHTML='';lib().forEach((s,i)=>{const b=document.createElement('button');b.className='sk';b.setAttribute('role','radio');b.setAttribute('aria-checked',s.url===url);
     b.innerHTML=`<canvas width="16" height="32"></canvas><span>${esc(s.n)}</span>`;drawFigure(b.querySelector('canvas').getContext('2d'),s.url,false,s.slim);b.onclick=()=>{skinSel=s.url;model=s.slim?'slim':'classic';renderSkin()};L.appendChild(b)});
@@ -831,13 +883,110 @@ function renderSkin(){const p=who;$('#skinOwner').textContent=p?'· '+p.name:'';
     S.skins=(S.skins||[]).concat([{n:(r.name||'Skin').slice(0,12),url:r.url,slim:false}]);skinSel=r.url;save();renderSkin()}).catch(fail);L.appendChild(add);
   $('#applySkin').disabled=!off;$('#capeLoad').disabled=$('#capeOff').disabled=!off;
   $('#skinNote').textContent=!p?'':off?(cape===null?'Ohne Umhang. ':cape?'Neuer Umhang gewählt. ':'')+'Wird beim nächsten Spielen mit diesem Namen genutzt.':'Den Skin eines Microsoft-Kontos änderst du auf minecraft.net. Hier siehst du ihn, und die Bibliothek ist für deine Offline-Namen.'}
-$('#flipSkin').onclick=()=>{back=!back;renderSkin()};
+$('#flipSkin').onclick=()=>{back=!back;skin3d.face(back);$('#flipSkin').textContent=back?'Vorderseite':'Rückseite'};
 $$('#armSeg button').forEach(b=>b.onclick=()=>{model=b.dataset.a;skinSel=skinSel||skinOf(who);renderSkin()});
 $('#capeLoad').onclick=()=>call('pickImage').then(r=>{if(r){cape=r.url;renderSkin()}}).catch(fail);
 $('#capeOff').onclick=()=>{cape=null;renderSkin()};
 $('#applySkin').onclick=async()=>{const p=who;if(!p||p.kind!=='off')return;const url=skinSel||skinOf(p);
   try{await call('setSkin',{name:p.name,skin:url,model,cape:cape||'',noCape:cape===null});S.offlineSkins={...(S.offlineSkins||{}),[p.name]:{url,slim:model==='slim'}};save();skinSel=null;cape=undefined;renderAccounts();
     if(p.selected)drawHead($('#railHead'),url);toast('Skin für '+p.name+' gespeichert')}catch(e){fail(e)}};
+
+
+/* ---------- catalogs: Horizon's registry (Horizon instances), Modrinth (Java instances) ---------- */
+const fmtN=n=>n>=1e6?(n/1e6).toFixed(1).replace('.',',')+' Mio.':n>=1e3?Math.round(n/1e3)+' Tsd.':String(n||0);
+const srcOf=i=>isJava(i)?'modrinth':'horizon';
+const kindName={mod:'Mods',shader:'Shader',resourcepack:'Ressourcenpakete'};
+function catQuery(i,kind){return{source:srcOf(i),kind,mc:i?.java?.minecraft||'',loader:i?.java?.loader?.kind||''}}
+function installedIds(kind){if(kind==='mod')return new Set(mods.flatMap(m=>[m.id,String(m.title).toLowerCase()]));
+  return new Set(packs.filter(p=>p.kind===(kind==='shader'?'shader':'resource')).flatMap(p=>[p.file,String(p.title).toLowerCase()]))}
+function catCard(p,kind,after){const c=document.createElement('div');c.className='cat';const h=hue(p.id);
+  const have=installedIds(kind);const done=have.has(p.id)||have.has(String(p.title).toLowerCase())||have.has(p.slug+'.hmod');
+  c.innerHTML=`<div class="cico" style="background:hsl(${h} 65% 72%)">${p.icon?`<img alt="" loading="lazy" src="${esc(p.icon)}">`:esc((p.title||'?')[0].toUpperCase())}</div>
+    <div class="min"><div class="t"><a href="#" data-page>${esc(p.title)}</a></div><div class="by">${esc(p.author||'')}${p.downloads?' · '+fmtN(p.downloads)+' Downloads':''}</div></div>
+    <button class="btn ${done?'done':'primary'}" ${done?'disabled':''}>${done?'Installiert':'Installieren'}</button><p class="sum">${esc(p.summary||'')}</p>`;
+  const im=c.querySelector('img');if(im)im.onerror=()=>{im.remove();c.querySelector('.cico').textContent=(p.title||'?')[0].toUpperCase()};
+  c.querySelector('[data-page]').onclick=e=>{e.preventDefault();if(p.page)call('openUrl',{url:p.page}).catch(fail)};
+  const b=c.querySelector('.btn');b.onclick=async()=>{if(b.disabled)return;b.disabled=true;b.textContent='Wird installiert …';
+    try{await call('install',{...catQuery(sel,kind),id:p.slug||p.id,instance:sel.id,home:sel.home});b.textContent='Installiert';b.className='btn done';toast(p.title+' installiert');after&&after()}
+    catch(e){b.disabled=false;b.textContent='Installieren';fail(e);openConsole('Installation')}};
+  return c}
+function mountCatalog(root){const kind=root.dataset.kind;if(!sel)return;const key=sel.id;
+  if(root.dataset.inst===key)return;root.dataset.inst=key;
+  const src=srcOf(sel);const st={q:'',sort:'downloads',offset:0};
+  const noLoader=src==='modrinth'&&kind==='mod'&&!sel.java.loader;
+  root.innerHTML=`<div class="toolbar"><h2 style="margin-right:6px">${kindName[kind]} entdecken</h2>
+    <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input placeholder="Im Katalog suchen" aria-label="${kindName[kind]} im Katalog suchen"></label>
+    <div class="seg" role="group" aria-label="Sortierung"><button aria-pressed="true" data-s="downloads">Beliebt</button><button aria-pressed="false" data-s="relevance">Passend</button></div>
+    <span class="src">${src==='horizon'?'Horizon-Katalog (geprüft)':'Modrinth · Minecraft '+esc(sel.java.minecraft)}</span></div>
+    <div class="catgrid"></div><div class="more"></div>`;
+  const grid=root.querySelector('.catgrid'),more=root.querySelector('.more');
+  if(noLoader){grid.innerHTML='<div class="empty">Diese Java-Instanz hat keinen Mod-Loader. Lege ein Modpack mit Fabric, Quilt, Forge oder NeoForge an, dann gibt es hier Mods.</div>';return}
+  const after=()=>{if(kind==='mod')loadMods();else loadPacks()};
+  async function load(reset){if(reset){st.offset=0;grid.innerHTML='<div class="loading">Wird geladen …</div>'}more.innerHTML='';
+    let list=[];try{list=await call('catalog',{...catQuery(sel,kind),query:st.q,sort:st.sort,offset:st.offset,limit:24})}catch(e){grid.innerHTML=`<div class="empty err">${esc(e)}</div>`;return}
+    if(reset)grid.innerHTML='';list.forEach(p=>grid.appendChild(catCard(p,kind,after)));
+    if(reset&&!list.length)grid.innerHTML=`<div class="empty">Nichts gefunden.</div>`;
+    if(list.length===24){const b=document.createElement('button');b.className='btn';b.textContent='Mehr laden';b.onclick=()=>{st.offset+=24;load(false)};more.appendChild(b)}}
+  let t=0;root.querySelector('input').oninput=e=>{clearTimeout(t);t=setTimeout(()=>{st.q=e.target.value.trim();if(st.q&&st.sort==='downloads')setSort('relevance');else load(true)},300)};
+  const setSort=v=>{st.sort=v;root.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===v));load(true)};
+  root.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>setSort(b.dataset.s));
+  load(true)}
+
+/* ---------- start page: worlds, screenshots, popular mods ---------- */
+const fileUrl=path=>'xdfile://localhost'+encodeURI(path).replace(/#/g,'%23').replace(/\?/g,'%3F');
+const modeName={survival:'Überleben',creative:'Kreativ',adventure:'Abenteuer',spectator:'Zuschauer',hardcore:'Hardcore'};
+let homeFor=null;
+async function loadHome(){if(!sel||homeFor===sel.id)return;homeFor=sel.id;const i=sel;
+  const W=$('#worldList'),G=$('#shotGrid'),P=$('#popular');W.innerHTML=G.innerHTML=P.innerHTML='<div class="loading">Wird geladen …</div>';
+  $('#popTitle').textContent=isJava(i)?'Beliebte Mods auf Modrinth':'Beliebte Horizon-Mods';
+  call('worlds',{instance:i.id}).then(ws=>{if(sel!==i)return;ws=(ws||[]).sort((a,b)=>(b.last_played_ms||0)-(a.last_played_ms||0)).slice(0,4);W.innerHTML='';
+    if(!ws.length)W.innerHTML='<div class="empty">Noch keine Welten. Starte das Spiel und lege eine an.</div>';
+    ws.forEach(w=>{const b=document.createElement('button');b.className='world';
+      b.innerHTML=`${w.icon?`<img alt="" src="${fileUrl(w.icon)}">`:'<span class="noimg"></span>'}<span class="min"><b style="font-weight:600">${esc(w.name)}</b><br><small>${esc(modeName[String(w.mode).toLowerCase()]||w.mode||'')} · ${esc(ago(w.last_played_ms))}</small></span><span class="badge">${isJava(i)?'Spielen':'Beitreten'}</span>`;
+      const im=b.querySelector('img');if(im)im.onerror=()=>im.replaceWith(Object.assign(document.createElement('span'),{className:'noimg'}));
+      b.onclick=()=>play({world:isJava(i)?'':w.folder});W.appendChild(b)})}).catch(()=>{W.innerHTML='<div class="empty">Welten konnten nicht gelesen werden.</div>'});
+  call('screenshots',{instance:i.id}).then(ss=>{if(sel!==i)return;ss=(ss||[]).slice(0,6);G.innerHTML='';
+    if(!ss.length)G.innerHTML='<div class="empty" style="grid-column:1/-1">Noch keine Screenshots. Im Spiel mit F2 aufnehmen.</div>';
+    ss.forEach(x=>{const b=document.createElement('button');b.className='shot';b.title=x.name;b.innerHTML=`<img alt="${esc(x.name)}" loading="lazy" src="${fileUrl(x.path)}">`;b.onclick=()=>call('openPath',{path:x.path}).catch(fail);G.appendChild(b)})}).catch(()=>{G.innerHTML=''});
+  const noLoader=isJava(i)&&!i.java.loader;
+  if(noLoader){P.innerHTML='<div class="empty">Diese Java-Instanz hat keinen Mod-Loader.</div>';return}
+  call('catalog',{...catQuery(i,'mod'),query:'',sort:'downloads',limit:6}).then(list=>{if(sel!==i)return;P.innerHTML='';(list||[]).forEach(p=>P.appendChild(catCard(p,'mod',()=>loadCounts())))}).catch(e=>{P.innerHTML=`<div class="empty">Katalog nicht erreichbar: ${esc(e)}</div>`})}
+$('#savesFolder').onclick=()=>openDir('/saves');$('#shotsFolder').onclick=()=>openDir('/screenshots');
+
+/* ---------- 3D skin: the game's model sizes and the 64×64 skin layout ---------- */
+// A box of w×h×d skin pixels whose texture starts at (u,v): right, front, left, back on the
+// second row; top and bottom above front and left (the layout every skin uses).
+function boxFaces(u,v,w,h,d){return{right:[u,v+d,d,h],front:[u+d,v+d,w,h],left:[u+d+w,v+d,d,h],back:[u+d+w+d,v+d,w,h],top:[u+d,v,w,d],bottom:[u+d+w,v,w,d]}}
+const skin3d=(()=>{const root=$('#skin3d');const P=7;let rx=-12,ry=-28,base=0,cur=null;const rig=document.createElement('div');rig.className='rig';root.appendChild(rig);
+  function apply(){rig.style.transform=`translateY(${-0*P}px) rotateX(${rx}deg) rotateY(${ry+base}deg)`}
+  function faceCanvas(im,r,flip){const c=document.createElement('canvas');c.width=Math.max(1,r[2]);c.height=Math.max(1,r[3]);const x=c.getContext('2d');x.imageSmoothingEnabled=false;
+    if(flip){x.translate(c.width,0);x.scale(-1,1)}x.drawImage(im,r[0],r[1],r[2],r[3],0,0,r[2],r[3]);return c}
+  // One box: its centre at (cx,cy,cz) in skin pixels (y down, z toward the viewer), grown by g on every side for the outer layer.
+  function box(im,uv,w,h,d,cx,cy,cz,g,outer,mirror){const part=document.createElement('div');part.className='part';
+    part.style.transform=`translate3d(${cx*P}px,${cy*P}px,${cz*P}px)`;
+    const W=(w+2*g)*P,H=(h+2*g)*P,D=(d+2*g)*P;const f=boxFaces(...uv,w,h,d);
+    const faces=mirror?{right:f.left,left:f.right,front:f.front,back:f.back,top:f.top,bottom:f.bottom}:f;
+    const place={front:[W,H,`translateZ(${D/2}px)`],back:[W,H,`rotateY(180deg) translateZ(${D/2}px)`],right:[D,H,`rotateY(-90deg) translateZ(${W/2}px)`],
+      left:[D,H,`rotateY(90deg) translateZ(${W/2}px)`],top:[W,D,`rotateX(90deg) translateZ(${H/2}px)`],bottom:[W,D,`rotateX(-90deg) translateZ(${H/2}px) scaleY(-1)`]};
+    for(const k in place){const [fw,fh,t]=place[k];const c=faceCanvas(im,faces[k],mirror);c.className='face'+(outer?' o':'');
+      c.style.width=fw+'px';c.style.height=fh+'px';c.style.transform=`translate(-50%,-50%) ${t}`;part.appendChild(c)}
+    rig.appendChild(part)}
+  async function set(url,slim){const key=url+'|'+slim;if(cur===key)return;cur=key;const im=await img(url);if(cur!==key)return;rig.innerHTML='';if(!im)return;
+    const legacy=im.height===32,a=slim?3:4,ax=4+a/2;
+    // Inner layer. Centres: the head over the body, the arms beside it, the legs below; 32 px tall, centred.
+    box(im,[0,0],8,8,8,0,-12,0,0);box(im,[16,16],8,12,4,0,-2,0,0);
+    box(im,[40,16],a,12,4,-ax,-2,0,0);box(im,[0,16],4,12,4,-2,10,0,0);
+    if(legacy){box(im,[40,16],a,12,4,ax,-2,0,0,false,true);box(im,[0,16],4,12,4,2,10,0,0,false,true)}
+    else{box(im,[32,48],a,12,4,ax,-2,0,0);box(im,[16,48],4,12,4,2,10,0,0)}
+    // Outer layer: the hat 0.5 px out on every side, the rest 0.25 px.
+    box(im,[32,0],8,8,8,0,-12,0,.5,true);
+    if(!legacy){box(im,[16,32],8,12,4,0,-2,0,.25,true);box(im,[40,32],a,12,4,-ax,-2,0,.25,true);box(im,[48,48],a,12,4,ax,-2,0,.25,true);
+      box(im,[0,32],4,12,4,-2,10,0,.25,true);box(im,[0,48],4,12,4,2,10,0,.25,true)}}
+  function face(backSide){base=backSide?180:0;rig.style.transition='transform .45s ease';apply();setTimeout(()=>rig.style.transition='',460)}
+  let drag=null;root.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,rx,ry};root.setPointerCapture(e.pointerId)});
+  root.addEventListener('pointermove',e=>{if(!drag)return;ry=drag.ry+(e.clientX-drag.x)*.6;rx=Math.max(-60,Math.min(60,drag.rx-(e.clientY-drag.y)*.4));apply()});
+  root.addEventListener('pointerup',()=>drag=null);root.addEventListener('pointercancel',()=>drag=null);
+  apply();return{set,face}})();
 
 /* ---------- start ---------- */
 async function boot(){let st;
@@ -846,7 +995,7 @@ async function boot(){let st;
   installed=st.installed||{installed:[]};horizon=st.horizon||{};ram=st.ram_gb||8;launcherFound=st.launcher_found!==false;
   sel=instances.find(i=>i.selected)||instances[0]||null;
   ['blur','op','speed'].forEach(k=>$('#'+k).value=S[k]);$('#curSize').value=S.curSize;
-  sw('#trailSw','trail');sw('#pauseSw','pause',kick);sw('#fsSw','fullscreen');sw('#logSw','console');
+  sw('#trailSw','trail');sw('#pauseSw','pause',()=>{winFocus=true;kick()});sw('#fsSw','fullscreen');sw('#logSw','console');
   applyLook();marks();setBg(S.bg);renderCursors();applyCursor();renderStart();status();loadAccounts();loadCounts();
   if(!accounts.accounts.length)banner('Noch kein Microsoft-Konto angemeldet. Zum Spielen brauchst du eines, das Minecraft: Java Edition besitzt.','Anmelden',()=>go('account'))}
 boot();
@@ -861,6 +1010,10 @@ function demo(cmd,a){const home='/Users/du/Library/Application Support/Horizon';
     mods:[{id:'minimap',title:'Minikarte',version:'1.4.2',on:true},{id:'zoom',title:'Zoom',version:'1.0.3',on:true},{id:'clouds',title:'Bessere Wolken',version:'0.5.1',on:false},{id:'coords',title:'Koordinaten',version:'1.1.4',on:true}],
     packs:[{kind:'resource',file:'Dunkle Menüs.zip',title:'Dunkle Menüs',description:'Dunkle Inventare',enabled:true},{kind:'resource',file:'Klare Schrift.zip',title:'Klare Schrift',description:'Schärfere Schrift',enabled:true},{kind:'resource',file:'Pastell.zip',title:'Pastell 16x',description:'Weiche Farben',enabled:false},{kind:'shader',file:'klarglas.hshader',title:'Klarglas',description:'Sanfte Schatten',enabled:true}],
     javaList:[{version:'21.0.5',home:'/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home',source:'installed'}],accountSkin:null};
+  D.pickImage=window.__testImage?{name:'Test',url:window.__testImage}:null;
+  D.worlds=[{folder:'Insel',name:'Insel',mode:'survival',last_played_ms:Date.now()-36e5,icon:null},{folder:'Burg',name:'Burgbau',mode:'creative',last_played_ms:Date.now()-2*864e5,icon:null}];
+  D.screenshots=[];
+  D.catalog=[{id:'minimap',slug:'minimap',title:'Minikarte',summary:'Eine Karte oben rechts mit Wegpunkten und Höhlenansicht.',author:'horizon',downloads:48200,icon:null},{id:'zoom',slug:'zoom',title:'Zoom',summary:'Taste C zoomt wie ein Fernglas.',author:'lena',downloads:31000,icon:null},{id:'sort',slug:'sort',title:'Inventar sortieren',summary:'Ein Klick sortiert Kisten.',author:'tom',downloads:12000,icon:null}];
   if(cmd==='accountSkin')throw 'offline';return D[cmd]??null}
 })();
 

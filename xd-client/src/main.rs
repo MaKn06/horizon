@@ -50,6 +50,7 @@ fn main() {
             "window.__xdPlatform = {:?};",
             std::env::consts::OS
         ))
+        .with_custom_protocol("xdfile".into(), |_id, req| backend::local_file(req))
         .with_ipc_handler(move |req: wry::http::Request<String>| {
             backend::handle(req.into_body(), ipc_proxy.clone())
         });

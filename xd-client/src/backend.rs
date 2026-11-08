@@ -166,7 +166,19 @@ fn dispatch(cmd: &str, args: &Value, proxy: &Proxy) -> Result<Value, String> {
             .pick_folder()
             .map(|p| json!(p.display().to_string()))
             .unwrap_or(Value::Null)),
-        "openPath" => open(s(args, "path")).map(|_| Value::Null),
+        "openPath" => {
+            let path = Path::new(s(args, "path"));
+            // A pack or mod folder the instance hasn't made yet: made now, so it opens.
+            if args["create"] == true && !path.exists() {
+                std::fs::create_dir_all(path).map_err(|e| e.to_string())?;
+            }
+            open(s(args, "path")).map(|_| Value::Null)
+        }
+
+        "worlds" => cli(&["worlds", "list", "--instance", s(args, "instance")]),
+        "screenshots" => cli(&["screenshots", "list", "--instance", s(args, "instance")]),
+        "catalog" => catalog(args),
+        "install" => install(args, proxy),
         "openUrl" => open(s(args, "url")).map(|_| Value::Null),
 
         "launch" => launch(args, proxy),
@@ -354,6 +366,9 @@ fn launch_inner(args: &Value, proxy: &Proxy) -> Result<Value, String> {
     }
 
     let mut play: Vec<String> = vec!["play".into(), "--instance".into(), id.clone()];
+    if let Some(world) = args["world"].as_str().filter(|w| !w.is_empty() && !java) {
+        play.extend(["--world".into(), world.to_owned()]);
+    }
     if !java {
         if w > 0 && h > 0 {
             play.extend([
@@ -783,10 +798,28 @@ fn java_home_of(p: &Path) -> PathBuf {
     p.to_path_buf()
 }
 
+/// Opens a folder, a file or a link the way the Finder would. On macOS straight through
+/// NSWorkspace: starting `open` takes seconds now and then.
 fn open(target: &str) -> Result<(), String> {
     if target.is_empty() {
         return Err("Nichts zu öffnen".into());
     }
+    #[cfg(target_os = "macos")]
+    {
+        use objc2_app_kit::NSWorkspace;
+        use objc2_foundation::{NSString, NSURL};
+        let url = if target.starts_with("http://") || target.starts_with("https://") {
+            NSURL::URLWithString(&NSString::from_str(target))
+        } else {
+            NSURL::from_file_path(target)
+        };
+        let url = url.ok_or_else(|| format!("{target} lässt sich nicht öffnen"))?;
+        return match NSWorkspace::sharedWorkspace().openURL(&url) {
+            true => Ok(()),
+            false => Err(format!("{target} lässt sich nicht öffnen")),
+        };
+    }
+    #[allow(unreachable_code)]
     let program = if cfg!(target_os = "macos") {
         "open"
     } else if cfg!(windows) {
@@ -799,4 +832,254 @@ fn open(target: &str) -> Result<(), String> {
         .spawn()
         .map(drop)
         .map_err(|e| e.to_string())
+}
+
+// --- the catalogs: Horizon's registry and Modrinth -------------------------------------------
+
+/// Sent with every request to Modrinth and the registry, as Modrinth asks of every client.
+const AGENT: &str = concat!("xd-client/", env!("CARGO_PKG_VERSION"), " (github.com/MaKn06/horizon)");
+const REGISTRY: &str = "https://horizon-rust.github.io/horizon-mods/index.json";
+const MODRINTH: &str = "https://api.modrinth.com/v2";
+
+fn get_json(url: &str) -> Result<Value, String> {
+    let text = ureq::get(url)
+        .set("User-Agent", AGENT)
+        .timeout(std::time::Duration::from_secs(20))
+        .call()
+        .map_err(|e| format!("{url}: {e}"))?
+        .into_string()
+        .map_err(|e| e.to_string())?;
+    serde_json::from_str(&text).map_err(|e| e.to_string())
+}
+
+/// Horizon's registry index, fetched at most every ten minutes.
+fn registry() -> Result<Value, String> {
+    static CACHE: Mutex<Option<(std::time::Instant, Value)>> = Mutex::new(None);
+    let mut cache = CACHE.lock().unwrap();
+    if let Some((at, v)) = cache.as_ref() {
+        if at.elapsed().as_secs() < 600 {
+            return Ok(v.clone());
+        }
+    }
+    let v = get_json(REGISTRY)?;
+    *cache = Some((std::time::Instant::now(), v.clone()));
+    Ok(v)
+}
+
+/// Projects for one page of the browser: `{id, slug, title, summary, author, downloads, icon,
+/// page}`. Horizon's registry for Horizon instances; Modrinth, for the instance's Minecraft
+/// version (and its loader, for mods), for Java instances. `sort` is "relevance" or
+/// "downloads".
+fn catalog(args: &Value) -> Result<Value, String> {
+    let kind = s(args, "kind");
+    let query = s(args, "query").to_lowercase();
+    let limit = args["limit"].as_u64().unwrap_or(30).min(100);
+    let offset = args["offset"].as_u64().unwrap_or(0);
+    if s(args, "source") == "horizon" {
+        let index = registry()?;
+        let mut found: Vec<Value> = index["projects"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|p| p["kind"] == kind)
+            .filter(|p| {
+                query.is_empty()
+                    || [&p["name"], &p["summary"], &p["id"]]
+                        .iter()
+                        .any(|f| f.as_str().unwrap_or("").to_lowercase().contains(&query))
+                    || p["tags"]
+                        .as_array()
+                        .is_some_and(|t| t.iter().any(|t| t.as_str() == Some(query.as_str())))
+            })
+            .map(|p| {
+                json!({
+                    "id": p["id"], "slug": p["id"], "title": p["name"], "summary": p["summary"],
+                    "author": p["authors"].as_array().map(|a| a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join(", ")),
+                    "downloads": p["downloads"].as_u64().unwrap_or(0), "icon": p["icon"],
+                    "page": format!("https://playhorizon.dev/mods/{}", p["id"].as_str().unwrap_or("")),
+                })
+            })
+            .collect();
+        if s(args, "sort") == "downloads" || query.is_empty() {
+            found.sort_by_key(|p| std::cmp::Reverse(p["downloads"].as_u64().unwrap_or(0)));
+        }
+        return Ok(json!(found
+            .into_iter()
+            .skip(offset as usize)
+            .take(limit as usize)
+            .collect::<Vec<_>>()));
+    }
+    let project_type = match kind {
+        "resourcepack" => "resourcepack",
+        "shader" => "shader",
+        _ => "mod",
+    };
+    let mut facets = vec![json!([format!("project_type:{project_type}")])];
+    if !s(args, "mc").is_empty() {
+        facets.push(json!([format!("versions:{}", s(args, "mc"))]));
+    }
+    if project_type == "mod" && !s(args, "loader").is_empty() {
+        facets.push(json!([format!("categories:{}", s(args, "loader"))]));
+    }
+    let index = if s(args, "sort") == "downloads" || query.is_empty() {
+        "downloads"
+    } else {
+        "relevance"
+    };
+    let url = format!(
+        "{MODRINTH}/search?query={}&facets={}&index={index}&limit={limit}&offset={offset}",
+        enc(&query),
+        enc(&Value::Array(facets).to_string())
+    );
+    let found = get_json(&url)?;
+    Ok(json!(found["hits"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|h| json!({
+            "id": h["project_id"], "slug": h["slug"], "title": h["title"], "summary": h["description"],
+            "author": h["author"], "downloads": h["downloads"], "icon": h["icon_url"],
+            "page": format!("https://modrinth.com/{project_type}/{}", h["slug"].as_str().unwrap_or("")),
+        }))
+        .collect::<Vec<_>>()))
+}
+
+/// Percent-encoding for a query string value.
+fn enc(s: &str) -> String {
+    s.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
+
+/// Installs a project into an instance. Mods and resource packs go through the Horizon
+/// launcher (`mods install`: the version for the instance, what it needs, the checksums and
+/// the registry's signatures). A Java instance's shader pack, which the launcher doesn't
+/// install, is downloaded here: Modrinth's newest file for its Minecraft version, checked
+/// against its SHA-512, into `shaderpacks/`.
+fn install(args: &Value, proxy: &Proxy) -> Result<Value, String> {
+    let (source, id, kind, instance) = (
+        s(args, "source"),
+        s(args, "id"),
+        s(args, "kind"),
+        s(args, "instance"),
+    );
+    if source == "modrinth" && kind == "shader" {
+        return install_modrinth_file(id, s(args, "mc"), &Path::new(s(args, "home")).join("shaderpacks"));
+    }
+    run_logged(
+        proxy,
+        &["mods", "install", id, "--source", source, "--instance", instance],
+        "install",
+    )
+    .map(|_| Value::Null)
+}
+
+fn install_modrinth_file(id: &str, mc: &str, dir: &Path) -> Result<Value, String> {
+    use sha2::Digest;
+    let id: String = id.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+    let mut url = format!("{MODRINTH}/project/{id}/version");
+    if !mc.is_empty() {
+        url.push_str(&format!("?game_versions={}", enc(&json!([mc]).to_string())));
+    }
+    let versions = get_json(&url)?;
+    let version = versions
+        .as_array()
+        .and_then(|v| v.first())
+        .ok_or("Keine Version für diese Minecraft-Version")?;
+    let files = version["files"].as_array().ok_or("Keine Datei")?;
+    let file = files
+        .iter()
+        .find(|f| f["primary"] == true)
+        .or(files.first())
+        .ok_or("Keine Datei")?;
+    let (name, link, sha) = (
+        file["filename"].as_str().unwrap_or(""),
+        file["url"].as_str().unwrap_or(""),
+        file["hashes"]["sha512"].as_str().unwrap_or(""),
+    );
+    if name.is_empty() || name.contains('/') || name.contains('\\') || name.starts_with('.') {
+        return Err("Ungültiger Dateiname".into());
+    }
+    if !link.starts_with("https://cdn.modrinth.com/") {
+        return Err("Die Datei liegt nicht bei Modrinth".into());
+    }
+    let mut bytes = Vec::new();
+    ureq::get(link)
+        .set("User-Agent", AGENT)
+        .call()
+        .map_err(|e| e.to_string())?
+        .into_reader()
+        .take(256 << 20)
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    let got: String = sha2::Sha512::digest(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    if got != sha.to_lowercase() {
+        return Err("Die Prüfsumme stimmt nicht: die Datei wurde nicht gespeichert".into());
+    }
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    std::fs::write(dir.join(name), bytes).map_err(|e| e.to_string())?;
+    Ok(json!(name))
+}
+
+// --- local pictures (screenshots, world icons) for the page ----------------------------------
+
+/// Answers `xdfile://localhost/<path>`: a PNG or JPEG inside a game folder's `screenshots/` or
+/// `saves/`, and nothing else.
+pub fn local_file(
+    req: wry::http::Request<Vec<u8>>,
+) -> wry::http::Response<std::borrow::Cow<'static, [u8]>> {
+    let raw = req.uri().path();
+    let path = PathBuf::from(percent_decode(raw));
+    let allowed = path.is_absolute()
+        && !path.components().any(|c| matches!(c, std::path::Component::ParentDir))
+        && path
+            .components()
+            .any(|c| c.as_os_str() == "screenshots" || c.as_os_str() == "saves")
+        && matches!(
+            path.extension().and_then(|e| e.to_str()).map(str::to_lowercase).as_deref(),
+            Some("png" | "jpg" | "jpeg")
+        );
+    let body = allowed.then(|| std::fs::read(&path).ok()).flatten();
+    let mime = if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("png")) {
+        "image/png"
+    } else {
+        "image/jpeg"
+    };
+    match body {
+        Some(bytes) => wry::http::Response::builder()
+            .header("Content-Type", mime)
+            .header("Cache-Control", "max-age=600")
+            .body(std::borrow::Cow::Owned(bytes))
+            .unwrap(),
+        None => wry::http::Response::builder()
+            .status(404)
+            .body(std::borrow::Cow::Borrowed(&b""[..]))
+            .unwrap(),
+    }
+}
+
+fn percent_decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            if let Ok(v) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
 }
