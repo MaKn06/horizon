@@ -1,7 +1,7 @@
 # Builds Aurora (aurora/: the glass launcher) for macOS on GitHub's Mac runners: Apple Silicon and
-# Intel. Each .app carries the Horizon launcher (launcher/), built in the same job, which Aurora
-# drives for installs, sign-in, packs and playing. Signed ad hoc; the .dmg files are this run's
-# artifacts (Actions tab → the run → Artifacts). Publishes no release.
+# Intel. Each .app carries Horizon's official launcher (its newest signed release), which Aurora
+# drives for installs, Microsoft sign-in, packs and playing. Aurora is signed ad hoc; the .dmg
+# files are this run's artifacts (Actions tab → the run → Artifacts). Publishes no release.
 name: Aurora DMG
 
 on:
@@ -28,10 +28,6 @@ jobs:
             target: aarch64-apple-darwin
           - arch: x64
             target: x86_64-apple-darwin
-    env:
-      # Microsoft sign-in needs an Azure app's client id (docs/microsoft-account.md): a repository
-      # variable. Without it Aurora still plays with offline names.
-      HORIZON_MSA_CLIENT_ID: ${{ vars.HORIZON_MSA_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,18 +37,31 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            launcher
-            aurora
+          workspaces: aurora
           shared-key: aurora-${{ matrix.arch }}
-      - name: Metal shaders compiled now, or at run time without the Metal toolchain
+      - name: The official Horizon launcher
+        # Horizon's own signed release (horizon-rust/horizon, launcher@X.Y.Z): its Microsoft
+        # sign-in is Horizon's registered app, which a fork's build doesn't have. The newest
+        # release with a build for this Mac; an older one when the newest has none yet.
         run: |
-          if ! xcrun metal --version > /dev/null 2>&1; then
-            echo "LAUNCHER_FEATURES=gpui_platform/runtime_shaders" >> "$GITHUB_ENV"
-          fi
-      - name: Build the Horizon launcher
-        working-directory: launcher
-        run: cargo build --release --locked --target ${{ matrix.target }} ${LAUNCHER_FEATURES:+--features "$LAUNCHER_FEATURES"}
+          set -euo pipefail
+          asset=horizon-launcher-macos-${{ matrix.arch }}.zip
+          tags=$(git ls-remote --tags https://github.com/horizon-rust/horizon \
+            | grep -o 'refs/tags/launcher@[0-9.]*$' | sed 's#refs/tags/##' | sort -rV | head -10)
+          for tag in $tags; do
+            url="https://github.com/horizon-rust/horizon/releases/download/$tag/$asset"
+            if curl -fsSL --retry 3 -o "$RUNNER_TEMP/horizon.zip" "$url"; then
+              echo "Using $tag"
+              break
+            fi
+            echo "$tag has no $asset"
+          done
+          [[ -s "$RUNNER_TEMP/horizon.zip" ]] || { echo "::error::no Horizon launcher release for ${{ matrix.arch }}"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/horizon"
+          ditto -x -k "$RUNNER_TEMP/horizon.zip" "$RUNNER_TEMP/horizon"
+          bin="$RUNNER_TEMP/horizon/Horizon.app/Contents/MacOS/horizon-launcher"
+          codesign --verify --verbose=2 "$bin"
+          echo "HORIZON_LAUNCHER_BIN=$bin" >> "$GITHUB_ENV"
       - name: Build Aurora
         working-directory: aurora
         run: cargo build --release --locked --target ${{ matrix.target }}
@@ -61,7 +70,7 @@ jobs:
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' aurora/Cargo.toml | head -1)
           bash aurora/packaging/package.sh \
             aurora/target/${{ matrix.target }}/release/aurora \
-            launcher/target/${{ matrix.target }}/release/horizon-launcher \
+            "$HORIZON_LAUNCHER_BIN" \
             "$version" out ${{ matrix.arch }}
       - uses: actions/upload-artifact@v7
         with:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Packages Aurora for macOS: Aurora.app (aurora, the Horizon launcher it drives beside it, the
+# Packages Aurora for macOS: Aurora.app (aurora, Horizon's launcher it drives beside it, the
 # icon), signed ad hoc, inside a .dmg with an Applications link to drag it onto.
 #
 #   aurora/packaging/package.sh AURORA_BINARY HORIZON_LAUNCHER_BINARY VERSION OUTDIR ARCH
@@ -33,8 +33,10 @@ sed "s/@VERSION@/$version/g" "$here/Info.plist" > "$app/Contents/Info.plist"
 printf 'APPL????' > "$app/Contents/PkgInfo"
 plutil -lint "$app/Contents/Info.plist"
 
-# Ad hoc: no Apple account needed. The launcher inside first, then the app around it.
-codesign --force --sign - "$app/Contents/MacOS/horizon-launcher"
+# Ad hoc: no Apple account needed. Horizon's official launcher keeps its own signature; one
+# without any is signed ad hoc first. Then the app around it.
+codesign --verify "$app/Contents/MacOS/horizon-launcher" 2>/dev/null \
+  || codesign --force --sign - "$app/Contents/MacOS/horizon-launcher"
 codesign --force --sign - "$app"
 codesign --verify --strict --verbose=2 "$app"
 "$app/Contents/MacOS/horizon-launcher" --version
