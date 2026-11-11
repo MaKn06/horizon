@@ -163,7 +163,16 @@ fn dispatch(cmd: &str, args: &Value, proxy: &Proxy) -> Result<Value, String> {
 
         "loadSettings" => Ok(load_settings()),
         "saveSettings" => save_settings(&args["settings"]).map(|_| Value::Null),
-        "pickImage" => pick_image(),
+        "pickImage" => pick_image(args["maxMb"].as_u64().unwrap_or(1)),
+        "addBackground" => add_background(),
+        "removeBackground" => {
+            let path = PathBuf::from(s(args, "path"));
+            // Only a picture xD Client copied in itself.
+            if path.parent() == Some(backgrounds_dir().as_path()) {
+                std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+            }
+            Ok(Value::Null)
+        }
         "pickJava" => Ok(rfd::FileDialog::new()
             .pick_file()
             .map(|p| json!(java_home_of(&p).display().to_string()))
@@ -710,26 +719,82 @@ fn data_url_bytes(url: &str) -> Result<Vec<u8>, String> {
         .map_err(|e| e.to_string())
 }
 
-fn pick_image() -> Result<Value, String> {
+/// A picture the player picks, as a data URL, at most `max_mb` MB.
+fn pick_image(max_mb: u64) -> Result<Value, String> {
     let Some(file) = rfd::FileDialog::new()
-        .add_filter("Bild", &["png", "gif", "webp"])
+        .add_filter("Bild", &["png", "jpg", "jpeg", "gif", "webp"])
         .pick_file()
     else {
         return Ok(Value::Null);
     };
     let bytes = std::fs::read(&file).map_err(|e| e.to_string())?;
-    if bytes.len() > 1 << 20 {
-        return Err("Das Bild ist größer als 1 MB.".into());
+    if bytes.len() as u64 > max_mb.clamp(1, 32) << 20 {
+        return Err(format!("Das Bild ist größer als {} MB.", max_mb.clamp(1, 32)));
     }
-    let mime = match file.extension().and_then(|e| e.to_str()).unwrap_or("png") {
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        _ => "image/png",
-    };
+    let mime = image_mime(&file);
     Ok(json!({
         "name": file.file_stem().map(|s| s.to_string_lossy().into_owned()),
         "url": format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)),
     }))
+}
+
+fn image_mime(path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(str::to_lowercase)
+        .as_deref()
+    {
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        _ => "image/png",
+    }
+}
+
+/// Where the player's own backgrounds are kept: copies, so moving the original changes nothing.
+fn backgrounds_dir() -> PathBuf {
+    settings_path()
+        .parent()
+        .map(|d| d.join("backgrounds"))
+        .unwrap_or_default()
+}
+
+/// Copies a picture the player picks into [`backgrounds_dir`]; the page shows it through
+/// `xdfile://`.
+fn add_background() -> Result<Value, String> {
+    let Some(file) = rfd::FileDialog::new()
+        .add_filter("Bild", &["png", "jpg", "jpeg", "gif", "webp"])
+        .pick_file()
+    else {
+        return Ok(Value::Null);
+    };
+    let size = std::fs::metadata(&file).map_err(|e| e.to_string())?.len();
+    if size > 40 << 20 {
+        return Err("Das Bild ist größer als 40 MB.".into());
+    }
+    let dir = backgrounds_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let stem: String = file
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default()
+        .chars()
+        .filter(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | ' '))
+        .take(40)
+        .collect();
+    let ext = file
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_lowercase();
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let target = dir.join(format!("{stamp}-{}.{ext}", stem.trim().replace(' ', "_")));
+    std::fs::copy(&file, &target).map_err(|e| e.to_string())?;
+    Ok(json!({ "path": target.display().to_string(), "name": stem.trim() }))
 }
 
 // --- xD Client's own settings and the system ----------------------------------------------------
@@ -1038,8 +1103,8 @@ fn install_modrinth_file(id: &str, mc: &str, dir: &Path) -> Result<Value, String
 
 // --- local pictures (screenshots, world icons) for the page ----------------------------------
 
-/// Answers `xdfile://localhost/<path>`: a PNG or JPEG inside a game folder's `screenshots/` or
-/// `saves/`, and nothing else.
+/// Answers `xdfile://localhost/<path>`: a picture inside a game folder's `screenshots/` or
+/// `saves/`, or one of the player's backgrounds, and nothing else.
 pub fn local_file(
     req: wry::http::Request<Vec<u8>>,
 ) -> wry::http::Response<std::borrow::Cow<'static, [u8]>> {
@@ -1047,19 +1112,16 @@ pub fn local_file(
     let path = PathBuf::from(percent_decode(raw));
     let allowed = path.is_absolute()
         && !path.components().any(|c| matches!(c, std::path::Component::ParentDir))
-        && path
+        && (path
             .components()
             .any(|c| c.as_os_str() == "screenshots" || c.as_os_str() == "saves")
+            || path.parent() == Some(backgrounds_dir().as_path()))
         && matches!(
             path.extension().and_then(|e| e.to_str()).map(str::to_lowercase).as_deref(),
-            Some("png" | "jpg" | "jpeg")
+            Some("png" | "jpg" | "jpeg" | "gif" | "webp")
         );
     let body = allowed.then(|| std::fs::read(&path).ok()).flatten();
-    let mime = if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("png")) {
-        "image/png"
-    } else {
-        "image/jpeg"
-    };
+    let mime = image_mime(&path);
     match body {
         Some(bytes) => wry::http::Response::builder()
             .header("Content-Type", mime)

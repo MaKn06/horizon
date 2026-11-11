@@ -287,6 +287,33 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}.menu .mi{opacity:1}}
 
 [hidden]{display:none!important}
+#bgimg{position:fixed;inset:-3%;z-index:0;background-size:cover;background-position:center;opacity:0;transition:opacity .5s}
+#bgimg.on{opacity:1}
+#bgimg.drift{animation:drift 60s ease-in-out infinite alternate}
+@keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.08) translate(-1.5%,-1%)}}
+#bgdim{position:fixed;inset:0;z-index:0;pointer-events:none;background:#000;opacity:0;transition:opacity .4s}
+.bgopt.img{position:relative;background-size:cover;background-position:center}
+.bgopt.img .ph{display:block;width:100%;aspect-ratio:16/10;max-width:100%}
+.bgopt .rm{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;opacity:0;transition:opacity .15s;font-size:12px}
+.bgopt:hover .rm,.bgopt:focus-within .rm{opacity:1}
+.bgopt.add{display:grid;place-items:center;aspect-ratio:auto;color:var(--ink-3);font-size:13px;min-height:100px;background:rgba(255,255,255,.03);border-style:dashed}
+.bgopt.add b{font-size:26px;font-weight:400;display:block;text-align:center}
+.bgopt.add span{background:none;padding:0;color:var(--ink-3)}
+.bgopt.add:hover span{color:var(--ink)}
+.ic-pick{display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;align-items:start}
+.ic-pick .big{width:96px;height:96px;border-radius:24px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:40px;color:#fff;background-size:cover;background-position:center}
+.grads{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.grad{all:unset;cursor:pointer;aspect-ratio:1;border-radius:12px;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .15s}
+.grad:hover{transform:translateY(-2px)}
+.grad[aria-checked="true"]{border-color:#fff}
+.grad:focus-visible{outline:2px solid var(--accent)}
+.emojis{display:flex;flex-wrap:wrap;gap:6px}
+.emo{all:unset;cursor:pointer;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:20px;background:rgba(255,255,255,.05);border:1px solid var(--edge);transition:transform .15s,border-color .15s}
+.emo:hover{transform:translateY(-2px);border-color:var(--edge-hi)}
+.emo[aria-checked="true"]{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 15%,transparent)}
+.np-head .ic{cursor:pointer;position:relative}
+.np-head .ic::after{content:"✎";position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#0a0d16;font-size:11px;display:grid;place-items:center;opacity:0;transition:opacity .15s}
+.np-head .ic:hover::after{opacity:1}
 /* xD Client additions over the mockup's styles */
 body{padding-top:max(16px,env(safe-area-inset-top,0px))}
 body.mac .rail{padding-top:40px}
@@ -423,6 +450,7 @@ body.mac .top{padding-left:20px}
 </head>
 <body>
 <canvas id="bg" aria-hidden="true"></canvas>
+<div id="bgimg" aria-hidden="true"></div><div id="bgdim" aria-hidden="true"></div>
 <img id="cursor" alt="">
 
 <div class="app">
@@ -627,6 +655,14 @@ body.mac .top{padding-left:20px}
               <button class="bgopt" data-bg="waves" role="radio"><canvas width="240" height="150"></canvas><span>Wellen</span></button>
             </div>
           </div>
+          <div class="field"><span class="label">Eigene Bilder</span>
+            <div class="bgs" id="bgImgs" role="radiogroup" aria-label="Eigene Hintergrundbilder"></div>
+            <span class="note">PNG, JPEG, WebP oder GIF (auch animiert), bis 40 MB. xD Client legt eine Kopie an.</span>
+          </div>
+          <div id="imgOpts" class="stack" style="gap:14px">
+            <div class="field"><div class="lbl"><span>Bild abdunkeln</span><output id="dimOut"></output></div><input type="range" id="bgDim" min="0" max="80" aria-label="Bild abdunkeln"></div>
+            <div class="toggle"><span>Langsam bewegen (Ken-Burns-Effekt)</span><button class="switch" id="driftSw" role="switch" aria-checked="false" aria-label="Bild langsam bewegen"></button></div>
+          </div>
           <div class="field"><div class="lbl"><span>Glas-Unschärfe</span><output id="blurOut"></output></div><input type="range" id="blur" min="0" max="60" aria-label="Glas-Unschärfe"></div>
           <div class="field"><div class="lbl"><span>Glas-Deckkraft</span><output id="opOut"></output></div><input type="range" id="op" min="0" max="40" aria-label="Glas-Deckkraft"></div>
           <div class="field"><div class="lbl"><span>Animationstempo</span><output id="spOut"></output></div><input type="range" id="speed" min="0" max="20" aria-label="Animationstempo"></div>
@@ -705,7 +741,7 @@ function renderStart(){const i=sel;
   $('#playBtn').textContent=playing?'Läuft …':'Spielen';$('#playBtn').disabled=playing||!i;
   const G=$('#mpGrid');G.innerHTML='';
   instances.forEach(p=>{const c=document.createElement('div');c.className='glass mp'+(p.id===sel?.id?' sel':'');
-    c.innerHTML=`<div class="art" style="background:${art(p.id)}"><span class="icon">${esc((p.name||'?')[0].toUpperCase())}</span><span class="chip mono ver">${esc(verText(p))}</span>${p.id===sel?.id?'<span class="chip on"><span class="dot"></span>Ausgewählt</span>':''}</div>
+    c.innerHTML=`<div class="art" style="background:${bannerBg(p)}"><span class="icon" style="background:${iconBg(p)}">${iconFace(p)}</span><span class="chip mono ver">${esc(verText(p))}</span>${p.id===sel?.id?'<span class="chip on"><span class="dot"></span>Ausgewählt</span>':''}</div>
     <div class="b"><h2>${esc(p.name)}</h2><div class="meta"><span>${hours(p.played_secs||0)} gespielt</span><span>${esc(ago(p.last_played_ms))}</span></div>
     <div class="act"><button class="btn primary">Spielen</button><button class="btn">Mods</button><button class="btn" aria-label="Ordner öffnen" title="Ordner öffnen">⋯</button></div></div>`;
     const [pl,md,more]=c.querySelectorAll('.btn');
@@ -715,7 +751,39 @@ function renderStart(){const i=sel;
   refreshStats();if(view==='start')$('#subtitle').textContent=i?verText(i):'';renderCtx();loadHome()}
 async function select(p){if(sel?.id===p.id)return;try{await call('selectInstance',{id:p.id});instances.forEach(x=>x.selected=x.id===p.id);sel=p;mods=[];packs=[];homeFor=null;renderStart();loadCounts();
   toast(`„${p.name}“ ausgewählt`);if(['mods','shaders','packs'].includes(view))go(view);else renderCtx()}catch(e){fail(e)}}
-const icHtml=(p,cls='ic')=>`<span class="${cls}" style="background:${art(p.id)}">${esc((p.name||'?')[0].toUpperCase())}</span>`;
+/* A modpack's icon: the player's picture, an emoji on a colour, a colour, or the first letter on the colour its id gives. */
+const GRADS=[[220,62],[265,70],[330,70],[10,75],[35,80],[95,55],[150,55],[185,60],[200,30],[0,0]];
+const gradCss=k=>{const [h,s_]=GRADS[k]||GRADS[0];return s_?`linear-gradient(135deg,hsl(${h} ${s_}% 22%),hsl(${(h+35)%360} ${s_}% 60%))`:'linear-gradient(135deg,#1b1e28,#3a3f50)'};
+const iconOf=p=>(S.icons||{})[p?.id]||{};
+function iconBg(p){const ic=iconOf(p);if(ic.img)return `url("${ic.img}") center/cover`;if(ic.grad!=null)return gradCss(ic.grad);return art(p.id)}
+function iconFace(p){const ic=iconOf(p);if(ic.img)return '';if(ic.emoji)return esc(ic.emoji);return esc((p.name||'?')[0].toUpperCase())}
+const icHtml=(p,cls='ic')=>`<span class="${cls}" style="background:${iconBg(p)}">${iconFace(p)}</span>`;
+// The card's banner: the picture behind a dark veil, else the colour.
+function bannerBg(p){const ic=iconOf(p);return ic.img?`linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)),url("${ic.img}") center/cover`:(ic.grad!=null?gradCss(ic.grad):art(p.id))}
+/* Pictures become 128 px squares before they are kept, so settings stay small. */
+async function squareIcon(url){const im=await img(url);if(!im)throw 'Das Bild lässt sich nicht lesen.';const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  const s0=Math.min(im.width,im.height);x.imageSmoothingQuality='high';x.drawImage(im,(im.width-s0)/2,(im.height-s0)/2,s0,s0,0,0,128,128);return c.toDataURL('image/png')}
+const EMOJI=['⛏️','🗡️','🏹','🛡️','🌲','🏔️','🌋','🏝️','🏰','⚙️','🔥','💎','🌙','⭐','🚀','🧪','🐉','🍄'];
+function iconSheet(p,onPick){let cur={...iconOf(p)};const name=p.name||'?';
+  const m=openSheet(`<h2 style="font-size:18px">Icon für „${esc(name)}“</h2>
+    <div class="ic-pick"><span class="big" id="icBig"></span><div class="stack" style="gap:14px">
+      <div class="np-row"><button class="btn primary" data-a="img">Bild wählen …</button><button class="btn" data-a="reset">Zurücksetzen</button></div>
+      <div class="field"><span class="label">Farbe</span><div class="grads" role="radiogroup" aria-label="Farbe">${GRADS.map((g,k)=>`<button class="grad" data-g="${k}" role="radio" aria-label="Farbe ${k+1}" style="background:${gradCss(k)}"></button>`).join('')}</div></div>
+      <div class="field"><span class="label">Symbol</span><div class="emojis" role="radiogroup" aria-label="Symbol"><button class="emo" data-e="" role="radio" aria-label="Anfangsbuchstabe" style="font-family:var(--f-display);font-weight:700;font-size:16px">${esc(name[0].toUpperCase())}</button>${EMOJI.map(e=>`<button class="emo" data-e="${e}" role="radio" aria-label="${e}">${e}</button>`).join('')}</div></div>
+    </div></div>
+    <div class="modal-actions"><button class="btn" data-a="x">Abbrechen</button><button class="btn primary" data-a="ok">Übernehmen</button></div>`);
+  const show=()=>{const big=m.querySelector('#icBig');const fake={id:p.id,name};const keep=S.icons;S.icons={...(S.icons||{}),[p.id]:cur};
+    big.style.background=iconBg(fake);big.innerHTML=iconFace(fake);S.icons=keep;
+    m.querySelectorAll('.grad').forEach(b=>b.setAttribute('aria-checked',!cur.img&&String(cur.grad)===b.dataset.g));
+    m.querySelectorAll('.emo').forEach(b=>b.setAttribute('aria-checked',!cur.img&&(cur.emoji||'')===b.dataset.e))};
+  m.querySelectorAll('.grad').forEach(b=>b.onclick=()=>{cur={grad:+b.dataset.g,emoji:cur.emoji};show()});
+  m.querySelectorAll('.emo').forEach(b=>b.onclick=()=>{cur={grad:cur.grad??0,emoji:b.dataset.e||undefined};show()});
+  m.querySelector('[data-a=img]').onclick=()=>call('pickImage',{maxMb:16}).then(async r=>{if(!r)return;try{cur={img:await squareIcon(r.url)};show()}catch(e){fail(e)}}).catch(fail);
+  m.querySelector('[data-a=reset]').onclick=()=>{cur={};show()};
+  m.querySelector('[data-a=x]').onclick=()=>{hideSheet($('#sheet'));onPick(undefined)};
+  m.querySelector('[data-a=ok]').onclick=()=>{hideSheet($('#sheet'));onPick(Object.keys(cur).length&&(cur.img||cur.grad!=null||cur.emoji)?cur:null)};
+  show()}
+function setIcon(id,ic){const all={...(S.icons||{})};if(ic)all[id]=ic;else delete all[id];S.icons=all;save();renderStart()}
 let menuFor=null;
 /* A menu under its button, or above it when there is no room below; it closes on any click outside. */
 function popMenu(anchor,items){const m=$('#instMenu');if(!m.hidden&&menuFor===anchor){closeMenu();return}
@@ -734,7 +802,8 @@ function instItems(){return instances.map(p=>({on:p.id===sel?.id,html:`${icHtml(
   .concat(['-',{html:'<span class="ic" style="background:rgba(255,255,255,.08)">+</span><span>Neues Modpack …</span><span></span>',act:newInstance}])}
 function switcher(anchor){popMenu(anchor,instItems())}
 function cardMenu(p,anchor){popMenu(anchor,[{html:'<span class="ic" style="background:rgba(255,255,255,.08)">▸</span><span>Ordner öffnen</span><span></span>',act:()=>call('openPath',{path:p.home}).catch(fail)},
-  {html:'<span class="ic" style="background:rgba(255,255,255,.08)">✎</span><span>Umbenennen …</span><span></span>',act:()=>renameInstance(p)}])}
+  {html:'<span class="ic" style="background:rgba(255,255,255,.08)">✎</span><span>Umbenennen …</span><span></span>',act:()=>renameInstance(p)},
+  {html:'<span class="ic" style="background:rgba(255,255,255,.08)">◐</span><span>Icon ändern …</span><span></span>',act:()=>iconSheet(p,ic=>{if(ic!==undefined)setIcon(p.id,ic)})}])}
 async function renameInstance(p){const r=await dialog('Modpack umbenennen',`<label class="field"><span class="lbl"><span>Name</span></span><input class="inp" name="name" maxlength="40" value="${esc(p.name)}"></label>`,'Umbenennen');
   if(!r||!r.name.trim()||r.name.trim()===p.name)return;try{await call('renameInstance',{id:p.id,name:r.name.trim()});await loadInstances();toast('Umbenannt')}catch(e){fail(e)}}
 $('#switchBtn').onclick=e=>{e.stopPropagation();switcher(e.currentTarget)};
@@ -821,8 +890,14 @@ async function newInstance(){closeMenu();const st={type:'horizon',mc:'',loader:'
     <div class="np-sec" id="npJava"></div>
     <div class="np-sec" id="npSteps" hidden><span class="label">Fortschritt</span><div class="steps"></div></div>
     <div class="modal-actions"><button class="btn" data-a="x">Abbrechen</button><button class="btn primary" data-a="go">Erstellen</button></div>`);
-  const name=m.querySelector('#npName'),ic=m.querySelector('#npIc');
-  name.oninput=()=>{const v=name.value.trim();ic.textContent=(v||'?')[0].toUpperCase();ic.style.background=art(v||'neu')};setTimeout(()=>name.focus(),40);
+  const name=m.querySelector('#npName'),ic=m.querySelector('#npIc');let pickedIcon=null;
+  const drawIc=()=>{const v=name.value.trim();const fake={id:'__new',name:v||'?'};const keep=S.icons;S.icons={...(S.icons||{}),__new:pickedIcon||{}};
+    ic.style.background=pickedIcon?iconBg(fake):art(v||'neu');ic.innerHTML=pickedIcon?iconFace(fake):esc((v||'?')[0].toUpperCase());S.icons=keep};
+  name.oninput=drawIc;setTimeout(()=>name.focus(),40);ic.title='Icon wählen';ic.setAttribute('role','button');ic.tabIndex=0;
+  // The icon sheet replaces this one for a moment; what was typed and chosen here stays.
+  ic.onclick=()=>{const keepName=name.value;const parent=$('#sheet');const saved=[...m.childNodes];
+    iconSheet({id:'__new',name:keepName||'?'},pic=>{setTimeout(()=>{parent.hidden=false;m.replaceChildren(...saved);if(pic!==undefined)pickedIcon=pic;drawIc()},170)})};
+  ic.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();ic.click()}};
   const types=m.querySelectorAll('[data-t]');const setType=t=>{st.type=t;types.forEach(b=>b.setAttribute('aria-checked',b.dataset.t===t));renderJava()};types.forEach(b=>b.onclick=()=>setType(b.dataset.t));
   async function renderJava(){const J=m.querySelector('#npJava');if(st.type!=='java'){J.innerHTML='';return}
     J.innerHTML=`<span class="label">Version und Mod-Loader</span><div class="np-row"><select class="inp" id="npVer" aria-label="Minecraft-Version"><option>Wird geladen …</option></select><label class="np-check"><input type="checkbox" id="npSnap" ${st.snap?'checked':''}> Snapshots zeigen</label></div>
@@ -847,6 +922,7 @@ async function newInstance(){closeMenu();const st={type:'horizon',mc:'',loader:'
       go.onclick=()=>{hideSheet($('#sheet'));newInstance()};return}
     const done=steps.innerHTML.replace('step run','step ok').replace('<span class="st"></span>','<span class="st">✓</span>');
     let ok=0;if(ids.length&&made&&made.id)ok=await installSteps(m,made,ids,done);else steps.innerHTML=done;
+    if(pickedIcon&&made?.id){S.icons={...(S.icons||{}),[made.id]:pickedIcon};save()}
     await loadInstances();const inst=instances.find(i=>i.id===made?.id);
     go.disabled=false;go.textContent='Zum Modpack';x.remove();go.onclick=async()=>{hideSheet($('#sheet'));if(inst){await select(inst);go_('start')}};
     toast(`„${n}“ erstellt${ids.length?` · ${ok} von ${ids.length} Performance-Mods`:''}`)}}
@@ -931,8 +1007,9 @@ function drawWaves(c,w,h,t,s,acc){const g=c.createLinearGradient(0,0,0,h);g.addC
 const renders={stars:[mkStars,drawStars],net:[mkNet,drawNet],waves:[()=>({}),drawWaves]};
 let scene=null,last=performance.now(),T=0,running=false;
 let winFocus=true,bgErr=false,ticker=0;
-function paint(dt){if(!W||!H||!scene)return;try{cx.setTransform(DPR,0,0,DPR,0,0);renders[S.bg][1](cx,W,H,T,scene,S.accent,dt,mouse.x,mouse.y)}catch(e){if(!bgErr){bgErr=true;log('[xD Client] Hintergrund: '+e,'err')}}}
-function paused(){return document.hidden||(S.pause&&!winFocus)}
+function paint(dt){if(!W||!H||!scene||isImg())return;try{cx.setTransform(DPR,0,0,DPR,0,0);renders[S.bg][1](cx,W,H,T,scene,S.accent,dt,mouse.x,mouse.y)}catch(e){if(!bgErr){bgErr=true;log('[xD Client] Hintergrund: '+e,'err')}}}
+const isImg=()=>String(S.bg).startsWith('img:');
+function paused(){return document.hidden||isImg()||(S.pause&&!winFocus)}
 function frame(now){if(now===undefined)now=performance.now();const dt=Math.min(3,Math.max(0,(now-last)/16.7))*(S.speed/10);last=now;T+=dt*16.7;paint(dt);
   if(reduce||paused()){running=false;return}schedule()}
 // Animation frames first; a timer takes over when they stop coming (a web view that thinks it is hidden).
@@ -944,10 +1021,24 @@ addEventListener('resize',()=>{resize();scene=renders[S.bg][0](W,H);redraw();kic
 addEventListener('focus',()=>{winFocus=true;kick()});addEventListener('blur',()=>{winFocus=false});
 document.addEventListener('visibilitychange',()=>{redraw();kick()});
 let thumbsOn=false;
-function drawThumbs(){if(thumbsOn)return;thumbsOn=true;const opts=$$('.bgopt').map(b=>{const c=b.querySelector('canvas');return{b,x:c.getContext('2d'),s:renders[b.dataset.bg][0](240,150),t:0}});
+function drawThumbs(){if(thumbsOn)return;thumbsOn=true;const opts=$$('.bgopt').filter(b=>b.querySelector('canvas')).map(b=>{const c=b.querySelector('canvas');return{b,x:c.getContext('2d'),s:renders[b.dataset.bg][0](240,150),t:0}});
   (function tick(){if($('#v-look').hidden){thumbsOn=false;return}opts.forEach(o=>{o.t+=16.7*(S.speed/10);renders[o.b.dataset.bg][1](o.x,240,150,o.t,o.s,S.accent,S.speed/10,120,75)});if(!reduce)requestAnimationFrame(tick);else thumbsOn=false})()}
-function setBg(v){if(!renders[v])v='stars';S.bg=v;$$('.bgopt').forEach(b=>b.setAttribute('aria-checked',b.dataset.bg===v));resize();scene=renders[v][0](W,H);T=reduce?4000:T;redraw();kick()}
+function setBg(v){const pic=String(v).startsWith('img:')&&(S.bgImages||[]).some(b=>'img:'+b.path===v);if(!renders[v]&&!pic)v='stars';S.bg=v;$$('.bgopt').forEach(b=>b.setAttribute('aria-checked',b.dataset.bg===v));applyBgImage();if(pic){scene=null;return}resize();scene=renders[v][0](W,H);T=reduce?4000:T;redraw();kick()}
 $$('.bgopt').forEach(b=>b.addEventListener('click',()=>{setBg(b.dataset.bg);save()}));
+/* The player's own pictures: copied by the backend, shown full screen through xdfile://, dimmed by choice. */
+function applyBgImage(){const el=$('#bgimg'),dim=$('#bgdim');const on=isImg();
+  if(on){const path=String(S.bg).slice(4);el.style.backgroundImage=`url("${fileUrl(path)}")`;el.classList.add('on');el.classList.toggle('drift',!!S.bgDrift&&!reduce);dim.style.opacity=(S.bgDim??35)/100}
+  else{el.classList.remove('on','drift');dim.style.opacity=0}
+  $('#bg').style.visibility=on?'hidden':'visible';$('#imgOpts').hidden=!on;$('#dimOut').textContent=(S.bgDim??35)+' %';$('#bgDim').value=S.bgDim??35;$('#driftSw').setAttribute('aria-checked',!!S.bgDrift)}
+function renderBgImages(){const G=$('#bgImgs');G.innerHTML='';(S.bgImages||[]).forEach(b=>{const key='img:'+b.path;const o=document.createElement('div');o.className='bgopt img';o.setAttribute('role','radio');o.tabIndex=0;
+    o.setAttribute('aria-checked',S.bg===key);o.dataset.bg=key;o.style.backgroundImage=`url("${fileUrl(b.path)}")`;
+    o.innerHTML=`<span class="ph"></span><span>${esc(b.name||'Bild')}</span><button class="rm" aria-label="${esc(b.name||'Bild')} entfernen" title="Entfernen">✕</button>`;
+    o.onclick=e=>{if(e.target.closest('.rm'))return;setBg(key);renderBgImages();save()};o.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();o.click()}};
+    o.querySelector('.rm').onclick=async()=>{try{await call('removeBackground',{path:b.path})}catch(e){}S.bgImages=(S.bgImages||[]).filter(x=>x.path!==b.path);if(S.bg===key)setBg('stars');renderBgImages();save()};G.appendChild(o)});
+  const add=document.createElement('button');add.className='bgopt add';add.innerHTML='<span><b>+</b>Bild hinzufügen</span>';
+  add.onclick=()=>call('addBackground').then(r=>{if(!r)return;S.bgImages=(S.bgImages||[]).concat([{path:r.path,name:r.name||'Bild'}]);setBg('img:'+r.path);renderBgImages();save();toast('Hintergrund gesetzt')}).catch(fail);G.appendChild(add)}
+$('#bgDim').addEventListener('input',e=>{S.bgDim=+e.target.value;applyBgImage();save()});
+$('#driftSw').onclick=()=>{S.bgDrift=!S.bgDrift;applyBgImage();save()};
 
 /* ---------- look ---------- */
 const root=document.documentElement.style;
@@ -1207,7 +1298,7 @@ async function boot(){let st;
   sel=instances.find(i=>i.selected)||instances[0]||null;
   ['blur','op','speed'].forEach(k=>$('#'+k).value=S[k]);$('#curSize').value=S.curSize;
   sw('#trailSw','trail');sw('#pauseSw','pause',()=>{winFocus=true;kick()});sw('#fsSw','fullscreen');sw('#logSw','console');
-  applyLook();marks();setBg(S.bg);renderCursors();applyCursor();renderStart();status();loadAccounts();loadCounts();
+  applyLook();marks();renderBgImages();setBg(S.bg);renderCursors();applyCursor();renderStart();status();loadAccounts();loadCounts();
   if(!accounts.accounts.length)banner('Noch kein Microsoft-Konto angemeldet. Zum Spielen brauchst du eines, das Minecraft: Java Edition besitzt.','Anmelden',()=>go('account'))}
 boot();
 
