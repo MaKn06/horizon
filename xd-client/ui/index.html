@@ -248,8 +248,45 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
   .bgs{grid-template-columns:1fr 1fr 1fr}
   .top .sub{display:none}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* motion: buttons answer the pointer, menus and sheets open from where they come from */
+.btn{transition:background .18s,border-color .18s,transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .25s,color .18s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.97);transition-duration:.06s}
+.btn.primary:hover{box-shadow:0 8px 24px -10px color-mix(in oklab,var(--accent) 80%,transparent)}
+.btn:disabled,.btn.done{transform:none}
+.ib,.sw,.cur,.presets button,.seg button,.linkbtn,.inst-chip,.stat,.bgopt,.sk,.jv,.acc,.world,.shot{transition:background .18s,border-color .18s,transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .25s,color .18s}
+.ib:hover,.inst-chip:hover,.sw:hover,.cur:hover,.sk:hover{transform:translateY(-1px)}
+.ib:active,.inst-chip:active,.sw:active,.cur:active,.sk:active,.presets button:active,.seg button:active{transform:scale(.95);transition-duration:.06s}
+.nav svg{transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.nav:hover svg{transform:scale(1.1)}
+.nav:active svg{transform:scale(.92)}
+.nav .tip{transform:translateX(-4px);transition:opacity .15s,transform .2s cubic-bezier(.2,.8,.2,1)}
+.nav:hover .tip,.nav:focus-visible .tip{transform:none}
+.mp,.cat,.shader,.world{transition:transform .25s cubic-bezier(.2,.8,.2,1),border-color .2s,box-shadow .3s}
+.mp:hover,.cat:hover,.world:hover{transform:translateY(-2px)}
+.switch::after{transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.switch:active::after{width:22px}
+.switch[aria-checked="true"]:active::after{transform:translateX(14px)}
+.caret{display:inline-block;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+[aria-expanded="true"] .caret{transform:rotate(180deg)}
+@keyframes menuDown{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes menuUp{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
+.menu.down{transform-origin:top left;animation:menuDown .18s cubic-bezier(.2,.8,.2,1)}
+.menu.up{transform-origin:bottom left;animation:menuUp .18s cubic-bezier(.2,.8,.2,1)}
+.menu .mi{opacity:0;animation:itemIn .22s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes itemIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.modal-back:not([hidden]){animation:fadeIn .2s ease}
+.modal-back:not([hidden]) .modal{animation:sheetIn .28s cubic-bezier(.2,.8,.2,1)}
+.modal-back.closing{animation:fadeIn .16s ease reverse forwards}
+.modal-back.closing .modal{animation:sheetIn .16s ease reverse forwards}
+.view:not([hidden]){animation:fadeIn .22s ease}
+.toast{transition:opacity .25s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}.menu .mi{opacity:1}}
 
+[hidden]{display:none!important}
 /* xD Client additions over the mockup's styles */
 body{padding-top:max(16px,env(safe-area-inset-top,0px))}
 body.mac .rail{padding-top:40px}
@@ -295,6 +332,49 @@ body.mac .top{padding-left:20px}
 .modal-back[hidden]{display:none}
 .modal{width:min(440px,100%);padding:22px;display:flex;flex-direction:column;gap:16px;background:rgba(18,20,30,.92)}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px}
+.modal.wide{width:min(780px,100%);max-height:calc(100vh - 48px);overflow:auto;gap:20px}
+.np-head{display:flex;align-items:center;gap:16px}
+.np-head .ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:24px;color:#fff;flex:none;transition:background .3s}
+.np-head .inp{font-size:17px;font-weight:600;padding:12px 14px}
+.np-sec{display:flex;flex-direction:column;gap:10px}
+.np-types{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.np-type{all:unset;box-sizing:border-box;cursor:pointer;padding:16px;border-radius:var(--r-md);border:1px solid var(--edge);background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:6px;transition:border-color .2s,background .2s,transform .2s cubic-bezier(.2,.8,.2,1)}
+.np-type:hover{transform:translateY(-2px);border-color:var(--edge-hi)}
+.np-type b{font-family:var(--f-display);font-size:15px}
+.np-type small{color:var(--ink-3);font-size:12.5px;line-height:1.4}
+.np-type[aria-checked="true"]{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 10%,transparent);box-shadow:0 0 0 1px var(--accent)}
+.np-type:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.np-loaders{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.np-loaders .np-type{padding:12px;gap:4px}
+.np-loaders .np-type b{font-size:13.5px}
+.np-loaders .np-type small{font-size:11.5px}
+.np-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.np-row select{flex:1;min-width:180px}
+.np-check{display:inline-flex;align-items:center;gap:8px;color:var(--ink-2);font-size:13px;cursor:pointer}
+.np-check input{accent-color:var(--accent);width:16px;height:16px}
+.perf{border-radius:var(--r-md);border:1px solid color-mix(in oklab,var(--ok) 30%,var(--edge));background:color-mix(in oklab,var(--ok) 6%,transparent);padding:14px;display:flex;flex-direction:column;gap:12px}
+.perf .top{all:unset;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.perf .top b{font-family:var(--f-display)}
+.perf .top small{display:block;color:var(--ink-3);font-size:12.5px}
+.perf-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.pm{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;align-items:start;padding:10px;border-radius:11px;border:1px solid var(--edge);background:rgba(0,0,0,.18);transition:border-color .2s,background .2s,opacity .2s}
+.pm .box{width:16px;height:16px;border-radius:5px;border:2px solid var(--ink-3);margin-top:1px;display:grid;place-items:center;font-size:11px;color:#0a0d16;transition:background .15s,border-color .15s}
+.pm[aria-checked="true"]{border-color:color-mix(in oklab,var(--ok) 45%,transparent)}
+.pm[aria-checked="true"] .box{background:var(--ok);border-color:var(--ok)}
+.pm b{font-size:13px}
+.pm small{display:block;color:var(--ink-3);font-size:11.5px;line-height:1.35}
+.pm.have{opacity:.6;cursor:default}
+.pm:focus-visible{outline:2px solid var(--accent)}
+.perf[data-off] .perf-list{display:none}
+.steps{display:flex;flex-direction:column;gap:6px}
+.step{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid var(--edge);animation:itemIn .25s cubic-bezier(.2,.8,.2,1) both}
+.step .st{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;border:2px solid var(--ink-3);color:var(--ink-3)}
+.step.run .st{border-color:var(--accent);border-right-color:transparent;animation:spin .8s linear infinite}
+.step.ok .st{border-color:var(--ok);background:var(--ok);color:#0a0d16}
+.step.err .st{border-color:var(--bad);color:var(--bad)}
+.step small{color:var(--ink-3);font-size:12px;display:block}
+.step.err small{color:var(--bad)}
+@media (max-width:760px){.np-loaders{grid-template-columns:repeat(2,minmax(0,1fr))}.np-types{grid-template-columns:1fr}}
 .mp .art .icon{position:absolute;left:14px;top:12px;width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.25);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;color:#fff}
 .mp .art .on{right:12px;top:10px}
 .loading{padding:40px;text-align:center;color:var(--ink-3)}
@@ -380,7 +460,7 @@ body.mac .top{padding-left:20px}
             <div class="meta" id="heroMeta"></div>
             <div class="play-row">
               <button class="btn primary play" id="playBtn">Spielen</button>
-              <button class="btn" id="switchBtn" aria-haspopup="true" aria-expanded="false">Modpack wechseln ▾</button>
+              <button class="btn" id="switchBtn" aria-haspopup="true" aria-expanded="false">Modpack wechseln <span class="caret" aria-hidden="true">▾</span></button>
             </div>
           </div>
           <div class="glass pad stack">
@@ -570,6 +650,7 @@ body.mac .top{padding-left:20px}
 <div class="toast glass" id="toast" role="status"></div>
 <div class="menu glass" id="instMenu" role="menu" hidden></div>
 <div class="console glass" id="console" hidden><header><span class="dot" id="conDot"></span><b id="conTitle">Spielkonsole</b><button class="ib" id="conClear" aria-label="Leeren" title="Leeren">⌫</button><button class="ib" id="conCopy" aria-label="Log kopieren" title="Log kopieren">⧉</button><button class="ib" id="conClose" aria-label="Konsole schließen">✕</button></header><pre id="conLog"></pre></div>
+<div class="modal-back" id="sheet" hidden><div class="modal wide glass" role="dialog" aria-modal="true" aria-label="Modpack"></div></div>
 <div class="modal-back" id="modal" hidden><div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalBody" class="stack"></div><div class="modal-actions"><button class="btn" id="modalCancel">Abbrechen</button><button class="btn primary" id="modalOk">OK</button></div></div></div>
 
 <script>
@@ -639,12 +720,13 @@ let menuFor=null;
 /* A menu under its button, or above it when there is no room below; it closes on any click outside. */
 function popMenu(anchor,items){const m=$('#instMenu');if(!m.hidden&&menuFor===anchor){closeMenu();return}
   m.innerHTML='';items.forEach(it=>{if(it==='-'){m.appendChild(Object.assign(document.createElement('div'),{className:'sep'}));return}
-    const b=document.createElement('button');b.className='mi'+(it.on?' on':'');b.setAttribute('role','menuitem');b.innerHTML=it.html;b.onclick=()=>{closeMenu();it.act()};m.appendChild(b)});
-  m.hidden=false;menuFor=anchor;anchor.setAttribute('aria-expanded','true');
+    const b=document.createElement('button');b.className='mi'+(it.on?' on':'');b.style.animationDelay=Math.min(m.children.length,8)*18+'ms';b.setAttribute('role','menuitem');b.innerHTML=it.html;b.onclick=()=>{closeMenu();it.act()};m.appendChild(b)});
+  m.getAnimations?.().forEach(a=>a.cancel());m.hidden=false;menuFor=anchor;anchor.setAttribute('aria-expanded','true');
   const r=anchor.getBoundingClientRect(),mh=m.offsetHeight,mw=m.offsetWidth;
-  const below=innerHeight-r.bottom-12>=mh||r.top<mh+12;m.style.top=(below?r.bottom+8:r.top-mh-8)+'px';
+  const below=innerHeight-r.bottom-12>=mh||r.top<mh+12;m.style.top=(below?r.bottom+8:r.top-mh-8)+'px';m.classList.remove('up','down');void m.offsetWidth;m.classList.add(below?'down':'up');
   m.style.left=Math.max(12,Math.min(r.left,innerWidth-mw-12))+'px';m.querySelector('button')?.focus()}
-function closeMenu(){const m=$('#instMenu');if(m.hidden)return;m.hidden=true;menuFor?.setAttribute('aria-expanded','false');menuFor=null}
+function closeMenu(){const m=$('#instMenu');if(m.hidden)return;menuFor?.setAttribute('aria-expanded','false');menuFor=null;
+  if(reduce||!m.animate){m.hidden=true;return}m.animate([{opacity:1},{opacity:0,transform:'scale(.98)'}],{duration:110,easing:'ease-in'}).onfinish=()=>{if(!menuFor)m.hidden=true}}
 document.addEventListener('click',e=>{if(!e.target.closest('#instMenu')&&!(menuFor&&menuFor.contains(e.target)))closeMenu()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 addEventListener('resize',closeMenu);document.addEventListener('scroll',closeMenu,true);
@@ -663,13 +745,14 @@ const ctxText={mods:['Mods',i=>isJava(i)?'Java-Mods (.jar) im Ordner mods. Neue 
   packs:['Ressourcenpakete',i=>'Texturen, Sounds und Schriften für dieses Modpack.']};
 const ctxDir={mods:i=>isJava(i)?'/mods':'/horizon-mods',shaders:()=>'/shaderpacks',packs:()=>'/resourcepacks'};
 function renderCtx(){const i=sel;const chip=$('#instChip');chip.hidden=!i;
-  if(i)chip.innerHTML=`${icHtml(i)}<span class="lb">Modpack</span><span class="nm">${esc(i.name)}</span><span aria-hidden="true">▾</span>`;
+  if(i)chip.innerHTML=`${icHtml(i)}<span class="lb">Modpack</span><span class="nm">${esc(i.name)}</span><span class="caret" aria-hidden="true">▾</span>`;
   $$('[data-ctx]').forEach(el=>{const v=el.dataset.ctx;if(!i){el.innerHTML='';return}
     // A Java instance takes files picked from disk too; a Horizon one gets its content from the catalog, so its folder is enough.
     el.innerHTML=`${icHtml(i)}<div class="tx"><small>${ctxText[v][0]} für das Modpack</small><b>${esc(i.name)}</b> <span class="chip mono" style="margin-left:6px">${esc(verText(i))}</span><small style="margin-top:4px">${esc(ctxText[v][1](i))}</small></div>
-      <div class="acts"><button class="btn" data-a="switch" aria-haspopup="true">Modpack wechseln ▾</button><button class="btn" data-a="dir">Ordner öffnen</button>${isJava(i)?'<button class="btn primary" data-a="add">+ Datei hinzufügen</button>':''}</div>`;
+      <div class="acts">${v==='mods'&&isJava(i)&&i.java.loader?'<button class="btn" data-a="perf">⚡ Leistung optimieren</button>':''}<button class="btn" data-a="switch" aria-haspopup="true" aria-expanded="false">Modpack wechseln <span class="caret" aria-hidden="true">▾</span></button><button class="btn" data-a="dir">Ordner öffnen</button>${isJava(i)?'<button class="btn primary" data-a="add">+ Datei hinzufügen</button>':''}</div>`;
     el.querySelector('[data-a=switch]').onclick=e=>{e.stopPropagation();switcher(e.currentTarget)};
     el.querySelector('[data-a=dir]').onclick=()=>openDir(ctxDir[v](i));
+    const pf=el.querySelector('[data-a=perf]');if(pf)pf.onclick=()=>optimize(i);
     const add=el.querySelector('[data-a=add]');if(add)add.onclick=()=>v==='mods'
       ?call('addMods',{home:i.home,java:true}).then(n=>{if(n){toast(n+' Mod(s) hinzugefügt');loadMods()}}).catch(fail)
       :call('addPacks',{instance:i.id}).then(()=>loadPacks()).catch(fail)})}
@@ -678,16 +761,96 @@ $('#importPack').onclick=()=>call('importInstance').then(r=>{if(r!=null){toast('
 /* small dialog */
 function dialog(title,html,okText='OK'){return new Promise(res=>{$('#modalTitle').textContent=title;$('#modalBody').innerHTML=html;$('#modalOk').textContent=okText;const m=$('#modal');m.hidden=false;
   const first=m.querySelector('input,select');setTimeout(()=>first&&first.focus(),30);
-  const done=v=>{m.hidden=true;$('#modalOk').onclick=$('#modalCancel').onclick=null;res(v)};
+  const done=v=>{hideSheet(m);$('#modalOk').onclick=$('#modalCancel').onclick=null;res(v)};
   $('#modalOk').onclick=()=>done(Object.fromEntries([...m.querySelectorAll('[name]')].map(x=>[x.name,x.value])));$('#modalCancel').onclick=()=>done(null);
   m.onkeydown=e=>{if(e.key==='Escape')done(null);if(e.key==='Enter'&&e.target.tagName==='INPUT')$('#modalOk').click()}})}
-async function newInstance(){const r=await dialog('Neues Modpack',`
-  <label class="field"><span class="lbl"><span>Name</span></span><input class="inp" name="name" maxlength="40" placeholder="Mein Modpack"></label>
-  <label class="field"><span class="lbl"><span>Spiel</span></span><select class="inp" name="type"><option value="horizon">Horizon</option><option value="java">Minecraft: Java Edition</option></select></label>
-  <label class="field"><span class="lbl"><span>Minecraft-Version (nur Java)</span></span><input class="inp mono" name="minecraft" placeholder="latest oder 1.21.4"></label>
-  <label class="field"><span class="lbl"><span>Mod-Loader (nur Java)</span></span><select class="inp" name="loader"><option value="">Keiner</option><option>fabric</option><option>quilt</option><option>forge</option><option>neoforge</option></select></label>`,'Erstellen');
-  if(!r||!r.name.trim())return;toast('Wird erstellt …');
-  try{await call('createInstance',{name:r.name.trim(),minecraft:r.type==='java'?(r.minecraft.trim()||'latest'):'',loader:r.type==='java'?r.loader:''});await loadInstances();toast(r.name+' erstellt')}catch(e){fail(e)}}
+/* ---------- sheets: the larger dialogs ---------- */
+function hideSheet(el){if(el.hidden)return;if(reduce){el.hidden=true;return}el.classList.add('closing');setTimeout(()=>{el.hidden=true;el.classList.remove('closing')},150)}
+function openSheet(html){const back=$('#sheet'),m=back.querySelector('.modal');m.innerHTML=html;back.hidden=false;back.onkeydown=e=>{if(e.key==='Escape'&&!back.dataset.busy)hideSheet(back)};
+  back.onclick=e=>{if(e.target===back&&!back.dataset.busy)hideSheet(back)};return m}
+
+/* ---------- performance mods for Java modpacks (Modrinth) ---------- */
+const PERF_INFO={sodium:['Sodium','Moderner Renderer: oft deutlich mehr FPS'],embeddium:['Embeddium','Sodium für Forge: deutlich mehr FPS'],
+  lithium:['Lithium','Schnellere Spiellogik: Kreaturen, Redstone, Chunks'],'ferrite-core':['FerriteCore','Braucht spürbar weniger Arbeitsspeicher'],
+  entityculling:['EntityCulling','Zeichnet verdeckte Kreaturen und Kisten nicht'],immediatelyfast:['ImmediatelyFast','Schnelleres Zeichnen von HUD, Text und Items'],
+  modernfix:['ModernFix','Schnellerer Start, weniger Arbeitsspeicher'],'dynamic-fps':['Dynamic FPS','Weniger FPS im Hintergrund: spart Akku und CPU'],
+  iris:['Iris','Shader-Unterstützung (optional)']};
+const PERF={fabric:['sodium','lithium','ferrite-core','entityculling','immediatelyfast','modernfix','dynamic-fps','iris'],
+  quilt:['sodium','lithium','ferrite-core','entityculling','immediatelyfast','modernfix','dynamic-fps','iris'],
+  neoforge:['sodium','lithium','ferrite-core','entityculling','immediatelyfast','modernfix','dynamic-fps','iris'],
+  forge:['embeddium','ferrite-core','entityculling','immediatelyfast','modernfix']};
+const PERF_OFF=new Set(['iris']); // optional ones start unticked
+function perfBlock(loader,have=new Set()){const list=PERF[loader]||[];
+  return `<div class="perf" id="perfBox"><label class="top"><span><b>⚡ Leistung optimieren</b><small>Bewährte Performance-Mods von Modrinth, passend zu Version und Loader. Was es für die Version nicht gibt, wird übersprungen.</small></span><button type="button" class="switch" id="perfSw" role="switch" aria-checked="true" aria-label="Leistung optimieren"></button></label>
+    <div class="perf-list">${list.map(id=>{const [n,d]=PERF_INFO[id];const h=have.has(id);return `<button type="button" class="pm${h?' have':''}" data-id="${id}" role="checkbox" aria-checked="${h||!PERF_OFF.has(id)}" ${h?'aria-disabled="true"':''}><span class="box">✓</span><span><b>${n}</b>${h?' <small style="display:inline;color:var(--ok)">installiert</small>':''}<small>${d}</small></span></button>`}).join('')}</div></div>`}
+function wirePerf(root){const box=root.querySelector('#perfBox');if(!box)return;const sw=box.querySelector('#perfSw');
+  sw.onclick=()=>{const on=sw.getAttribute('aria-checked')!=='true';sw.setAttribute('aria-checked',on);if(on)box.removeAttribute('data-off');else box.setAttribute('data-off','')};
+  box.querySelectorAll('.pm:not(.have)').forEach(b=>b.onclick=()=>b.setAttribute('aria-checked',b.getAttribute('aria-checked')!=='true'))}
+function pickedPerf(root){const box=root.querySelector('#perfBox');if(!box||box.hasAttribute('data-off'))return[];return [...box.querySelectorAll('.pm[aria-checked="true"]:not(.have)')].map(b=>b.dataset.id)}
+// Installs the picked mods one by one, each as a row that turns into ✓ or ✕ with why.
+async function installSteps(m,inst,ids,firstRows=''){const back=$('#sheet');back.dataset.busy='1';
+  m.querySelector('.steps').innerHTML=firstRows+ids.map(id=>`<div class="step" data-id="${id}"><span class="st"></span><span><b>${PERF_INFO[id][0]}</b><small>wartet</small></span><span></span></div>`).join('');
+  let ok=0;for(const id of ids){const row=m.querySelector(`.step[data-id="${id}"]`);row.className='step run';row.querySelector('small').textContent='wird installiert …';
+    try{await call('install',{source:'modrinth',kind:'mod',id,instance:inst.id,home:inst.home,mc:inst.java?.minecraft||''});row.className='step ok';row.querySelector('.st').textContent='✓';row.querySelector('small').textContent='installiert';ok++}
+    catch(e){row.className='step err';row.querySelector('.st').textContent='✕';row.querySelector('small').textContent=String(e).slice(0,140)}}
+  delete back.dataset.busy;return ok}
+
+/* Leistung für ein bestehendes Java-Modpack */
+async function optimize(i){if(!isJava(i))return;const loader=i.java.loader?.kind;
+  if(!loader){toast('Dieses Modpack hat keinen Mod-Loader. Lege eines mit Fabric an, dann geht es.');return}
+  let have=new Set();try{const ms=await call('mods',{home:i.home,java:true});ms.forEach(x=>{if(x.slug)have.add(x.slug);const t=String(x.title).toLowerCase().replace(/\s+/g,'');Object.entries(PERF_INFO).forEach(([id,[n]])=>{if(t===n.toLowerCase().replace(/\s+/g,''))have.add(id)})})}catch(e){}
+  const m=openSheet(`<div class="np-head">${icHtml(i)}<div><h2 style="font-size:18px">Leistung optimieren</h2><span class="note">${esc(i.name)} · ${esc(verText(i))}</span></div></div>
+    <div class="np-sec">${perfBlock(loader,have)}</div><div class="np-sec"><div class="steps"></div></div>
+    <div class="modal-actions"><button class="btn" data-a="x">Abbrechen</button><button class="btn primary" data-a="go">Installieren</button></div>`);
+  m.querySelector('.np-head .ic').style.cssText+=';width:56px;height:56px;border-radius:16px;font-size:24px';
+  wirePerf(m);m.querySelector('#perfSw').remove();
+  m.querySelector('[data-a=x]').onclick=()=>hideSheet($('#sheet'));
+  m.querySelector('[data-a=go]').onclick=async e=>{const ids=pickedPerf(m);if(!ids.length)return toast('Nichts ausgewählt');const go=e.currentTarget;go.disabled=true;m.querySelector('[data-a=x]').disabled=true;
+    m.querySelector('.perf').style.display='none';const ok=await installSteps(m,i,ids);
+    go.disabled=false;go.textContent='Fertig';go.onclick=()=>{hideSheet($('#sheet'));if(sel?.id===i.id){loadMods();loadCounts()}};m.querySelector('[data-a=x]').remove();
+    toast(`${ok} von ${ids.length} Performance-Mods installiert`)}}
+
+/* Neues Modpack: Name, Spiel, Version, Loader, Leistung; danach der Fortschritt */
+const LOADERS=[['','Vanilla','Ohne Mods'],['fabric','Fabric','Empfohlen: die meisten Performance-Mods'],['quilt','Quilt','Wie Fabric, eigene Mods'],['forge','Forge','Große, ältere Modpacks'],['neoforge','NeoForge','Moderne Forge-Mods']];
+let mcVersions=null;
+async function newInstance(){closeMenu();const st={type:'horizon',mc:'',loader:'fabric',snap:false};
+  const m=openSheet(`<div class="np-head"><span class="ic" id="npIc" style="background:${art('neu')}">?</span><input class="inp" id="npName" maxlength="40" placeholder="Name des Modpacks" aria-label="Name des Modpacks"></div>
+    <div class="np-sec"><span class="label">Was willst du spielen?</span><div class="np-types" role="radiogroup" aria-label="Spiel">
+      <button type="button" class="np-type" data-t="horizon" role="radio"><b>Horizon</b><small>Minecraft in Rust: schnell, mit Horizons geprüften Mods und Shadern.</small></button>
+      <button type="button" class="np-type" data-t="java" role="radio"><b>Minecraft: Java Edition</b><small>Das Original, mit Fabric-, Forge- oder NeoForge-Mods von Modrinth.</small></button></div></div>
+    <div class="np-sec" id="npJava"></div>
+    <div class="np-sec" id="npSteps" hidden><span class="label">Fortschritt</span><div class="steps"></div></div>
+    <div class="modal-actions"><button class="btn" data-a="x">Abbrechen</button><button class="btn primary" data-a="go">Erstellen</button></div>`);
+  const name=m.querySelector('#npName'),ic=m.querySelector('#npIc');
+  name.oninput=()=>{const v=name.value.trim();ic.textContent=(v||'?')[0].toUpperCase();ic.style.background=art(v||'neu')};setTimeout(()=>name.focus(),40);
+  const types=m.querySelectorAll('[data-t]');const setType=t=>{st.type=t;types.forEach(b=>b.setAttribute('aria-checked',b.dataset.t===t));renderJava()};types.forEach(b=>b.onclick=()=>setType(b.dataset.t));
+  async function renderJava(){const J=m.querySelector('#npJava');if(st.type!=='java'){J.innerHTML='';return}
+    J.innerHTML=`<span class="label">Version und Mod-Loader</span><div class="np-row"><select class="inp" id="npVer" aria-label="Minecraft-Version"><option>Wird geladen …</option></select><label class="np-check"><input type="checkbox" id="npSnap" ${st.snap?'checked':''}> Snapshots zeigen</label></div>
+      <div class="np-loaders" role="radiogroup" aria-label="Mod-Loader">${LOADERS.map(([k,n,d])=>`<button type="button" class="np-type" data-l="${k}" role="radio" aria-checked="${st.loader===k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div><div id="npPerf"></div>`;
+    J.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{st.loader=b.dataset.l;J.querySelectorAll('[data-l]').forEach(x=>x.setAttribute('aria-checked',x===b));renderPerf()});
+    J.querySelector('#npSnap').onchange=e=>{st.snap=e.target.checked;mcVersions=null;loadVers()};
+    renderPerf();loadVers()}
+  function renderPerf(){const P=m.querySelector('#npPerf');if(!P)return;P.innerHTML=st.loader?perfBlock(st.loader):'<div class="info">Für Performance-Mods brauchst du einen Mod-Loader. Fabric ist dafür die beste Wahl.</div>';wirePerf(P)}
+  async function loadVers(){const sel_=m.querySelector('#npVer');if(!sel_)return;
+    try{if(!mcVersions)mcVersions=await call('minecraftVersions',{snapshots:st.snap})||[]}catch(e){sel_.innerHTML='<option value="latest">Neueste (Liste nicht erreichbar)</option>';return}
+    const list=mcVersions.filter(v=>st.snap||v.kind==='release');
+    sel_.innerHTML=list.map((v,k)=>`<option value="${esc(v.id)}"${(st.mc?v.id===st.mc:k===0)?' selected':''}>${esc(v.id)}${k===0?' (neueste)':''}${v.kind==='snapshot'?' · Snapshot':''}</option>`).join('')||'<option value="latest">Neueste</option>';
+    st.mc=sel_.value;sel_.onchange=()=>st.mc=sel_.value}
+  setType('horizon');
+  m.querySelector('[data-a=x]').onclick=()=>hideSheet($('#sheet'));
+  m.querySelector('[data-a=go]').onclick=async e=>{const n=name.value.trim();if(!n){name.focus();name.style.borderColor='var(--bad)';return toast('Gib dem Modpack einen Namen')}
+    const go=e.currentTarget,x=m.querySelector('[data-a=x]');const java=st.type==='java',ids=java&&st.loader?pickedPerf(m):[];
+    go.disabled=x.disabled=true;m.querySelectorAll('.np-sec:not(#npSteps)').forEach(s=>s.hidden=true);name.disabled=true;m.querySelector('#npSteps').hidden=false;
+    const steps=m.querySelector('.steps');steps.innerHTML=`<div class="step run" data-id="create"><span class="st"></span><span><b>Modpack anlegen</b><small>${java?'Minecraft '+esc(st.mc||'neueste')+(st.loader?' mit '+st.loader:''):'Horizon'}</small></span><span></span></div>`;
+    let made;try{made=await call('createInstance',{name:n,minecraft:java?(st.mc||'latest'):'',loader:java?st.loader:''})}
+    catch(err){const r=steps.querySelector('.step');r.className='step err';r.querySelector('.st').textContent='✕';r.querySelector('small').textContent=String(err);go.disabled=x.disabled=false;go.textContent='Erneut versuchen';
+      go.onclick=()=>{hideSheet($('#sheet'));newInstance()};return}
+    const done=steps.innerHTML.replace('step run','step ok').replace('<span class="st"></span>','<span class="st">✓</span>');
+    let ok=0;if(ids.length&&made&&made.id)ok=await installSteps(m,made,ids,done);else steps.innerHTML=done;
+    await loadInstances();const inst=instances.find(i=>i.id===made?.id);
+    go.disabled=false;go.textContent='Zum Modpack';x.remove();go.onclick=async()=>{hideSheet($('#sheet'));if(inst){await select(inst);go_('start')}};
+    toast(`„${n}“ erstellt${ids.length?` · ${ok} von ${ids.length} Performance-Mods`:''}`)}}
+const go_=v=>go(v);
 
 /* ---------- mods ---------- */
 let filter='all',q='';
@@ -1060,7 +1223,7 @@ function demo(cmd,a){const home='/Users/du/Library/Application Support/Horizon';
     javaList:[{version:'21.0.5',home:'/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home',source:'installed'}],accountSkin:null};
   D.pickImage=window.__testImage?{name:'Test',url:window.__testImage}:null;
   D.worlds=[{folder:'Insel',name:'Insel',mode:'survival',last_played_ms:Date.now()-36e5,icon:null},{folder:'Burg',name:'Burgbau',mode:'creative',last_played_ms:Date.now()-2*864e5,icon:null}];
-  D.screenshots=[];
+  D.screenshots=[];D.minecraftVersions=[{id:'1.21.10',kind:'release'},{id:'1.21.9',kind:'release'},{id:'1.21.4',kind:'release'},{id:'1.20.1',kind:'release'}];D.createInstance={id:'neu',name:'Neu',home:'/tmp/neu',java:{minecraft:'1.21.10',loader:{kind:'fabric'}}};D.install=null;
   D.catalog=[{id:'minimap',slug:'minimap',title:'Minikarte',summary:'Eine Karte oben rechts mit Wegpunkten und Höhlenansicht.',author:'horizon',downloads:48200,icon:null},{id:'zoom',slug:'zoom',title:'Zoom',summary:'Taste C zoomt wie ein Fernglas.',author:'lena',downloads:31000,icon:null},{id:'sort',slug:'sort',title:'Inventar sortieren',summary:'Ein Klick sortiert Kisten.',author:'tom',downloads:12000,icon:null}];
   if(cmd==='accountSkin')throw 'offline';return D[cmd]??null}
 })();

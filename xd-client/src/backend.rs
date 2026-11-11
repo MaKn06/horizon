@@ -96,7 +96,13 @@ fn dispatch(cmd: &str, args: &Value, proxy: &Proxy) -> Result<Value, String> {
         }
         "renameInstance" => cli(&["instance", "rename", s(args, "id"), s(args, "name")]),
         "deleteInstance" => cli(&["instance", "delete", s(args, "id")]),
-        "minecraftVersions" => cli(&["instance", "versions"]),
+        "minecraftVersions" => {
+            if args["snapshots"] == true {
+                cli(&["instance", "versions", "--snapshots"])
+            } else {
+                cli(&["instance", "versions"])
+            }
+        }
 
         "mods" => Ok(json!(list_mods(Path::new(s(args, "home")), args["java"] == true))),
         "toggleMod" => toggle_mod(
@@ -454,7 +460,7 @@ fn play_once(proxy: &Proxy, play: &[&str], on_launch: &str) -> Result<(), String
 /// on when `horizon-mods.txt` says `mod.<id>:true` (as the game's Options > Mods writes it).
 fn list_mods(home: &Path, java: bool) -> Vec<Value> {
     let mut out = Vec::new();
-    let titles: Vec<(String, String, String)> =
+    let titles: Vec<(String, String, String, String)> =
         std::fs::read_to_string(home.join("mod-browser.json"))
             .ok()
             .and_then(|t| serde_json::from_str::<Value>(&t).ok())
@@ -466,15 +472,16 @@ fn list_mods(home: &Path, java: bool) -> Vec<Value> {
                     e["file"].as_str().unwrap_or("").to_owned(),
                     e["title"].as_str().unwrap_or("").to_owned(),
                     e["number"].as_str().unwrap_or("").to_owned(),
+                    e["slug"].as_str().unwrap_or("").to_owned(),
                 )
             })
             .collect();
     let named = |file: &str, fallback: &str| {
         titles
             .iter()
-            .find(|(f, _, _)| f == file)
-            .map(|(_, t, n)| (t.clone(), n.clone()))
-            .unwrap_or((fallback.to_owned(), String::new()))
+            .find(|(f, _, _, _)| f == file)
+            .map(|(_, t, n, slug)| (t.clone(), n.clone(), slug.clone()))
+            .unwrap_or((fallback.to_owned(), String::new(), String::new()))
     };
     if java {
         for f in read_dir(&home.join("mods")) {
@@ -483,8 +490,8 @@ fn list_mods(home: &Path, java: bool) -> Vec<Value> {
             if !jar.ends_with(".jar") {
                 continue;
             }
-            let (title, version) = named(&format!("mods/{jar}"), jar.trim_end_matches(".jar"));
-            out.push(json!({ "id": jar, "title": title, "version": version, "on": !name.ends_with(".disabled") }));
+            let (title, version, slug) = named(&format!("mods/{jar}"), jar.trim_end_matches(".jar"));
+            out.push(json!({ "id": jar, "title": title, "version": version, "slug": slug, "on": !name.ends_with(".disabled") }));
         }
     } else {
         let list = std::fs::read_to_string(home.join("horizon-mods.txt")).unwrap_or_default();
@@ -501,8 +508,8 @@ fn list_mods(home: &Path, java: bool) -> Vec<Value> {
                     continue;
                 }
                 let id = name.strip_suffix(ext).unwrap_or(&name).to_owned();
-                let (title, version) = named(&format!("{dir}/{name}"), &id);
-                out.push(json!({ "id": id, "title": title, "version": version, "on": on(&id), "native": dir == "horizon-native-mods" }));
+                let (title, version, slug) = named(&format!("{dir}/{name}"), &id);
+                out.push(json!({ "id": id, "title": title, "version": version, "slug": slug, "on": on(&id), "native": dir == "horizon-native-mods" }));
             }
         }
     }
